@@ -1,0 +1,12 @@
+{
+	"$schema": "./node_modules/oxfmt/configuration_schema.json",
+	"useTabs": true,
+	"singleQuote": false,
+	"jsxSingleQuote": false,
+	"ignorePatterns": [
+		"src/styles/app.css",
+		"src/components/ui/**/*",
+		"src/routeTree.gen.ts",
+		"worker-configuration.d.ts"
+	]
+}
