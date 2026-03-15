@@ -16,6 +16,8 @@ import { Route as LibraryRouteImport } from './routes/library'
 import { Route as CreateRouteImport } from './routes/create'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StoriesStoryIdRouteImport } from './routes/stories.$storyId'
+import { Route as SignUpSsoCallbackRouteImport } from './routes/sign-up.sso-callback'
+import { Route as SignInSsoCallbackRouteImport } from './routes/sign-in.sso-callback'
 import { Route as SSlugRouteImport } from './routes/s.$slug'
 import { Route as ApiMayarWebhookRouteImport } from './routes/api/mayar/webhook'
 import { Route as ApiMediaStoriesStoryIdImagesIndexRouteImport } from './routes/api/media/stories/$storyId/images/$index'
@@ -56,6 +58,16 @@ const StoriesStoryIdRoute = StoriesStoryIdRouteImport.update({
   path: '/stories/$storyId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SignUpSsoCallbackRoute = SignUpSsoCallbackRouteImport.update({
+  id: '/sso-callback',
+  path: '/sso-callback',
+  getParentRoute: () => SignUpRoute,
+} as any)
+const SignInSsoCallbackRoute = SignInSsoCallbackRouteImport.update({
+  id: '/sso-callback',
+  path: '/sso-callback',
+  getParentRoute: () => SignInRoute,
+} as any)
 const SSlugRoute = SSlugRouteImport.update({
   id: '/s/$slug',
   path: '/s/$slug',
@@ -84,9 +96,11 @@ export interface FileRoutesByFullPath {
   '/create': typeof CreateRoute
   '/library': typeof LibraryRoute
   '/my-library': typeof MyLibraryRoute
-  '/sign-in': typeof SignInRoute
-  '/sign-up': typeof SignUpRoute
+  '/sign-in': typeof SignInRouteWithChildren
+  '/sign-up': typeof SignUpRouteWithChildren
   '/s/$slug': typeof SSlugRoute
+  '/sign-in/sso-callback': typeof SignInSsoCallbackRoute
+  '/sign-up/sso-callback': typeof SignUpSsoCallbackRoute
   '/stories/$storyId': typeof StoriesStoryIdRoute
   '/api/mayar/webhook': typeof ApiMayarWebhookRoute
   '/api/media/stories/$storyId/audio/$index': typeof ApiMediaStoriesStoryIdAudioIndexRoute
@@ -97,9 +111,11 @@ export interface FileRoutesByTo {
   '/create': typeof CreateRoute
   '/library': typeof LibraryRoute
   '/my-library': typeof MyLibraryRoute
-  '/sign-in': typeof SignInRoute
-  '/sign-up': typeof SignUpRoute
+  '/sign-in': typeof SignInRouteWithChildren
+  '/sign-up': typeof SignUpRouteWithChildren
   '/s/$slug': typeof SSlugRoute
+  '/sign-in/sso-callback': typeof SignInSsoCallbackRoute
+  '/sign-up/sso-callback': typeof SignUpSsoCallbackRoute
   '/stories/$storyId': typeof StoriesStoryIdRoute
   '/api/mayar/webhook': typeof ApiMayarWebhookRoute
   '/api/media/stories/$storyId/audio/$index': typeof ApiMediaStoriesStoryIdAudioIndexRoute
@@ -111,9 +127,11 @@ export interface FileRoutesById {
   '/create': typeof CreateRoute
   '/library': typeof LibraryRoute
   '/my-library': typeof MyLibraryRoute
-  '/sign-in': typeof SignInRoute
-  '/sign-up': typeof SignUpRoute
+  '/sign-in': typeof SignInRouteWithChildren
+  '/sign-up': typeof SignUpRouteWithChildren
   '/s/$slug': typeof SSlugRoute
+  '/sign-in/sso-callback': typeof SignInSsoCallbackRoute
+  '/sign-up/sso-callback': typeof SignUpSsoCallbackRoute
   '/stories/$storyId': typeof StoriesStoryIdRoute
   '/api/mayar/webhook': typeof ApiMayarWebhookRoute
   '/api/media/stories/$storyId/audio/$index': typeof ApiMediaStoriesStoryIdAudioIndexRoute
@@ -129,6 +147,8 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/s/$slug'
+    | '/sign-in/sso-callback'
+    | '/sign-up/sso-callback'
     | '/stories/$storyId'
     | '/api/mayar/webhook'
     | '/api/media/stories/$storyId/audio/$index'
@@ -142,6 +162,8 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/s/$slug'
+    | '/sign-in/sso-callback'
+    | '/sign-up/sso-callback'
     | '/stories/$storyId'
     | '/api/mayar/webhook'
     | '/api/media/stories/$storyId/audio/$index'
@@ -155,6 +177,8 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/s/$slug'
+    | '/sign-in/sso-callback'
+    | '/sign-up/sso-callback'
     | '/stories/$storyId'
     | '/api/mayar/webhook'
     | '/api/media/stories/$storyId/audio/$index'
@@ -166,8 +190,8 @@ export interface RootRouteChildren {
   CreateRoute: typeof CreateRoute
   LibraryRoute: typeof LibraryRoute
   MyLibraryRoute: typeof MyLibraryRoute
-  SignInRoute: typeof SignInRoute
-  SignUpRoute: typeof SignUpRoute
+  SignInRoute: typeof SignInRouteWithChildren
+  SignUpRoute: typeof SignUpRouteWithChildren
   SSlugRoute: typeof SSlugRoute
   StoriesStoryIdRoute: typeof StoriesStoryIdRoute
   ApiMayarWebhookRoute: typeof ApiMayarWebhookRoute
@@ -226,6 +250,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoriesStoryIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sign-up/sso-callback': {
+      id: '/sign-up/sso-callback'
+      path: '/sso-callback'
+      fullPath: '/sign-up/sso-callback'
+      preLoaderRoute: typeof SignUpSsoCallbackRouteImport
+      parentRoute: typeof SignUpRoute
+    }
+    '/sign-in/sso-callback': {
+      id: '/sign-in/sso-callback'
+      path: '/sso-callback'
+      fullPath: '/sign-in/sso-callback'
+      preLoaderRoute: typeof SignInSsoCallbackRouteImport
+      parentRoute: typeof SignInRoute
+    }
     '/s/$slug': {
       id: '/s/$slug'
       path: '/s/$slug'
@@ -257,13 +295,35 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface SignInRouteChildren {
+  SignInSsoCallbackRoute: typeof SignInSsoCallbackRoute
+}
+
+const SignInRouteChildren: SignInRouteChildren = {
+  SignInSsoCallbackRoute: SignInSsoCallbackRoute,
+}
+
+const SignInRouteWithChildren =
+  SignInRoute._addFileChildren(SignInRouteChildren)
+
+interface SignUpRouteChildren {
+  SignUpSsoCallbackRoute: typeof SignUpSsoCallbackRoute
+}
+
+const SignUpRouteChildren: SignUpRouteChildren = {
+  SignUpSsoCallbackRoute: SignUpSsoCallbackRoute,
+}
+
+const SignUpRouteWithChildren =
+  SignUpRoute._addFileChildren(SignUpRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CreateRoute: CreateRoute,
   LibraryRoute: LibraryRoute,
   MyLibraryRoute: MyLibraryRoute,
-  SignInRoute: SignInRoute,
-  SignUpRoute: SignUpRoute,
+  SignInRoute: SignInRouteWithChildren,
+  SignUpRoute: SignUpRouteWithChildren,
   SSlugRoute: SSlugRoute,
   StoriesStoryIdRoute: StoriesStoryIdRoute,
   ApiMayarWebhookRoute: ApiMayarWebhookRoute,
