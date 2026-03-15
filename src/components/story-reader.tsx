@@ -177,7 +177,7 @@ export function StoryReader({
 											{isSpeaking ? "Stop Preview" : "Preview Suara"}
 										</Button>
 									)}
-									{canUsePaidAudio ? (
+									{canUsePaidAudio && !isPublic ? (
 										<a
 											href={part.voiceUrl}
 											download
@@ -185,7 +185,7 @@ export function StoryReader({
 										>
 											Unduh audio bagian ini
 										</a>
-									) : story.isPaid && onGenerateAudio ? (
+									) : canUsePaidAudio ? null : story.isPaid && onGenerateAudio ? (
 										<>
 											<Button
 												type="button"
@@ -206,6 +206,12 @@ export function StoryReader({
 													: "Buat audio premium untuk bagian ini saat diperlukan."}
 											</p>
 										</>
+									) : story.isPaid ? (
+										<p className={`text-sm ${nightMode ? "text-slate-400" : "text-slate-500"}`}>
+											{isPublic
+												? "Audio premium untuk bagian ini belum tersedia."
+												: "Audio premium untuk bagian ini belum dibuat."}
+										</p>
 									) : (
 										<p className={`text-sm ${nightMode ? "text-slate-400" : "text-slate-500"}`}>
 											Audio penuh terbuka setelah pembayaran.

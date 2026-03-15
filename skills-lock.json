@@ -1,0 +1,10 @@
+{
+	"version": 1,
+	"skills": {
+		"playwriter": {
+			"source": "remorses/playwriter",
+			"sourceType": "github",
+			"computedHash": "7791ed08632e9d42456c7a764a1db9bb446a0cf21dc18f635c07e0409e8e1146"
+		}
+	}
+}

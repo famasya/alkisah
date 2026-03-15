@@ -32,6 +32,19 @@ export type StoryLibraryCard = {
 	createdAt: string;
 };
 
+export type StoryPrivateLibraryCard = {
+	id: string;
+	title: string;
+	theme: string;
+	age: number;
+	coverImageUrl?: string;
+	previewExcerpt?: string;
+	createdAt: string;
+	paidAt?: string | null;
+	isPublic: boolean;
+	publicSlug?: string | null;
+};
+
 export type StoryDetail = {
 	id: string;
 	title: string;
@@ -59,6 +72,14 @@ export type StoryLibraryResult = {
 	page: number;
 	pageSize: number;
 	sort: "newest" | "popular";
+	totalItems: number;
+	hasNextPage: boolean;
+};
+
+export type StoryPrivateLibraryResult = {
+	items: StoryPrivateLibraryCard[];
+	page: number;
+	pageSize: number;
 	totalItems: number;
 	hasNextPage: boolean;
 };

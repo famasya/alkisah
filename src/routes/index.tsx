@@ -1,30 +1,23 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import {
-	ArrowRight,
-	BookHeart,
-	CloudLightning,
-	LibraryBig,
-	LockKeyhole,
-	WandSparkles,
-} from "lucide-react";
+import { ArrowRight, BookHeart, LibraryBig, LockKeyhole, WandSparkles } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { seo } from "~/utils/seo";
 
 const featureCards = [
 	{
 		title: "Cerita personal",
-		body: "Nama anak, usia, dan tema langsung diolah jadi kisah yang terasa ditulis khusus untuk keluarga itu.",
+		body: "Nama anak, usia, dan tema langsung diolah jadi kisah yang terasa ditulis khusus untuk keluarga Anda.",
 		icon: WandSparkles,
 	},
 	{
-		title: "Bayar sekali per cerita",
-		body: "Begitu cocok, buka audio premium, publikasi, dan tautan share dengan sekali bayar Rp5.000.",
+		title: "Gratis! dengan opsi premium untuk audio premium",
+		body: "Tersedia 3 cerita gratis per hari dengan opsi premium untuk audio narasi yang lebih natural.",
 		icon: LockKeyhole,
 	},
 	{
 		title: "Perpustakaan publik",
-		body: "Cerita yang dibagikan muncul di library publik dan bisa dibaca siapa saja tanpa login.",
+		body: "Cerita yang dibagikan dapat dipublikasikan di library publik dan bisa dibaca siapa saja tanpa login.",
 		icon: LibraryBig,
 	},
 ];
@@ -50,18 +43,14 @@ function LandingPage() {
 					transition={{ duration: 0.5 }}
 					className="space-y-7"
 				>
-					<div className="inline-flex rounded-full border border-slate-900/10 bg-white/80 px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">
-						<CloudLightning className="mr-2 size-4 text-orange-500" />
-						Cloudflare edge app • Clerk auth • OpenRouter • ElevenLabs
-					</div>
 					<div className="space-y-5">
 						<p className="font-heading text-5xl leading-[1.02] text-slate-900 sm:text-6xl">
-							Buat cerita anak yang terasa seperti ditulis untuk rumahmu sendiri.
+							Buat cerita anak yang terasa seperti ditulis untuk dirimu sendiri
 						</p>
 						<p className="max-w-2xl text-lg leading-8 text-slate-600">
 							Tulis nama anak, pilih usia dan tema, lalu Alkisah menyusun cerita terstruktur dengan
 							jumlah bagian yang fleksibel, ilustrasi storybook per bagian, dan audio premium yang
-							bisa dibuka saat kamu siap membayarnya.
+							bisa kamu akses saat kamu siap membayarnya.
 						</p>
 					</div>
 					<div className="flex flex-wrap items-center gap-4">
@@ -97,7 +86,7 @@ function LandingPage() {
 						</div>
 						<div className="rounded-[26px] border border-white/70 bg-white/80 p-5 shadow-[0_22px_60px_rgba(15,23,42,0.07)]">
 							<p className="text-sm font-medium text-slate-500">Format cerita</p>
-							<p className="mt-3 font-heading text-4xl">Fleksibel</p>
+							<p className="mt-3 font-heading text-4xl">Beragam</p>
 						</div>
 					</div>
 				</motion.div>
@@ -121,7 +110,7 @@ function LandingPage() {
 									</p>
 								</div>
 								<div className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white">
-									Fleksibel
+									3+
 								</div>
 							</div>
 							<div className="grid gap-4">
@@ -164,20 +153,18 @@ function LandingPage() {
 
 			<section className="grid gap-6 rounded-[32px] border border-slate-900/5 bg-slate-900 px-6 py-8 text-white shadow-[0_34px_100px_rgba(15,23,42,0.22)] lg:grid-cols-[0.9fr_1.1fr] lg:px-10">
 				<div className="space-y-4">
-					<p className="font-heading text-3xl">Kenapa struktur fleksibel?</p>
+					<p className="font-heading text-3xl">Cerita yang dibuat dinamis</p>
 					<p className="text-sm leading-7 text-slate-300">
-						Agar setiap ilustrasi benar-benar bermakna, cerita dibangun dalam jumlah bagian yang pas
-						untuk ritmenya sendiri. Biasanya 3 sampai 8 bagian, tetapi bisa lebih panjang bila
-						cerita membutuhkannya. Ini membuat pengalaman membaca lebih visual, lebih lentur, dan
-						tetap nyaman untuk anak kecil.
+						Setiap cerita punya kebutuhan ritme yang berbeda. Makanya, kami tidak memaksakan jumlah
+						halaman yang sama untuk semua cerita. Bisa 3 bagian untuk cerita pendek, atau lebih
+						panjang kalau ceritanya memang perlu. Hasilnya cerita lebih enak dibaca, lebih hidup,
+						dan tetap pas untuk anak-anak.
 					</p>
 				</div>
 				<div className="grid gap-4 sm:grid-cols-2">
 					{[
-						"Prompt gambar mengikuti guideline cerita anak, bukan sekadar salinan teks.",
-						"Preview suara gratis pakai Web Speech, audio premium dibuat per bagian setelah pembayaran.",
-						"Halaman publik menambah views dan bisa dibuka tanpa login.",
-						"Setelah paid, setiap bagian punya audio sendiri dan bisa diunduh.",
+						"Ilustrasinya mengikuti guideline cerita anak, bukan sekadar salinan teks.",
+						"Suara bisa langsung dicoba gratis lewat Web Speech. Mau kualitas lebih? Upgrade ke audio premium.",
 					].map((item) => (
 						<div
 							key={item}

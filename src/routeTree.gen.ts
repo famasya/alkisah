@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as MyLibraryRouteImport } from './routes/my-library'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as CreateRouteImport } from './routes/create'
 import { Route as IndexRouteImport } from './routes/index'
@@ -27,6 +28,11 @@ const SignUpRoute = SignUpRouteImport.update({
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
   path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyLibraryRoute = MyLibraryRouteImport.update({
+  id: '/my-library',
+  path: '/my-library',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LibraryRoute = LibraryRouteImport.update({
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
   '/library': typeof LibraryRoute
+  '/my-library': typeof MyLibraryRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/s/$slug': typeof SSlugRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
   '/library': typeof LibraryRoute
+  '/my-library': typeof MyLibraryRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/s/$slug': typeof SSlugRoute
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
   '/library': typeof LibraryRoute
+  '/my-library': typeof MyLibraryRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/s/$slug': typeof SSlugRoute
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/create'
     | '/library'
+    | '/my-library'
     | '/sign-in'
     | '/sign-up'
     | '/s/$slug'
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/'
     | '/create'
     | '/library'
+    | '/my-library'
     | '/sign-in'
     | '/sign-up'
     | '/s/$slug'
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/'
     | '/create'
     | '/library'
+    | '/my-library'
     | '/sign-in'
     | '/sign-up'
     | '/s/$slug'
@@ -141,6 +153,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CreateRoute: typeof CreateRoute
   LibraryRoute: typeof LibraryRoute
+  MyLibraryRoute: typeof MyLibraryRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
   SSlugRoute: typeof SSlugRoute
@@ -163,6 +176,13 @@ declare module '@tanstack/react-router' {
       path: '/sign-in'
       fullPath: '/sign-in'
       preLoaderRoute: typeof SignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-library': {
+      id: '/my-library'
+      path: '/my-library'
+      fullPath: '/my-library'
+      preLoaderRoute: typeof MyLibraryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/library': {
@@ -221,6 +241,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CreateRoute: CreateRoute,
   LibraryRoute: LibraryRoute,
+  MyLibraryRoute: MyLibraryRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
   SSlugRoute: SSlugRoute,

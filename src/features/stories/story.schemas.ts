@@ -49,8 +49,13 @@ export const libraryQuerySchema = z.object({
 	page: z.coerce.number().int().min(1).default(1),
 });
 
+export const privateLibraryQuerySchema = z.object({
+	page: z.coerce.number().int().min(1).default(1),
+});
+
 export type CreateStoryInput = z.infer<typeof createStorySchema>;
 export type PaymentRequestInput = z.infer<typeof paymentRequestSchema>;
 export type StoryPublicInput = z.infer<typeof storyPublicSchema>;
 export type LibraryQueryInput = z.infer<typeof libraryQuerySchema>;
+export type PrivateLibraryQueryInput = z.infer<typeof privateLibraryQuerySchema>;
 export type StoryPartAudioInput = z.infer<typeof storyPartAudioSchema>;

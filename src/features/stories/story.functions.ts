@@ -6,6 +6,7 @@ import {
 	getOwnedStory,
 	getPublicStory,
 	getViewer,
+	listPrivateStories,
 	listPublicStories,
 	processStoryIllustrations,
 	setStoryPublicState,
@@ -14,6 +15,7 @@ import {
 	createStorySchema,
 	libraryQuerySchema,
 	paymentRequestSchema,
+	privateLibraryQuerySchema,
 	publicStorySchema,
 	storyPartAudioSchema,
 	storyIdSchema,
@@ -41,6 +43,10 @@ export const getPublicStoryFn = createServerFn({ method: "GET" })
 export const listPublicStoriesFn = createServerFn({ method: "GET" })
 	.inputValidator((value) => libraryQuerySchema.parse(value))
 	.handler(({ data }) => listPublicStories(data));
+
+export const listPrivateStoriesFn = createServerFn({ method: "GET" })
+	.inputValidator((value) => privateLibraryQuerySchema.parse(value))
+	.handler(({ data }) => listPrivateStories(data));
 
 export const createPaymentLinkFn = createServerFn({ method: "POST" })
 	.inputValidator((value) => paymentRequestSchema.parse(value))

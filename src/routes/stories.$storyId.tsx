@@ -1,5 +1,5 @@
 import { useEffect, useState, useTransition } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Copy, Globe2, LockKeyhole, Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
@@ -21,7 +21,8 @@ export const Route = createFileRoute("/stories/$storyId")({
 	head: () => ({
 		meta: seo({
 			title: "Detail Cerita | Alkisah",
-			description: "Baca hasil cerita personal, buka audio premium, dan atur status publiknya.",
+			description:
+				"Baca hasil cerita personal, simpan private secara default, atau bagikan ke publik.",
 		}),
 	}),
 	loader: ({ params }) => getOwnedStoryFn({ data: { storyId: params.storyId } }),
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/stories/$storyId")({
 function StoryDetailPage() {
 	const loadedStory = Route.useLoaderData();
 	const search = Route.useSearch();
+	const router = useRouter();
 	const createPaymentLink = useServerFn(createPaymentLinkFn);
 	const generateStoryPartAudio = useServerFn(generateStoryPartAudioFn);
 	const processStoryIllustrations = useServerFn(processStoryIllustrationsFn);
@@ -126,9 +128,7 @@ function StoryDetailPage() {
 
 	return (
 		<div
-			className={`space-y-7 transition-colors ${
-				nightMode ? "rounded-[36px] bg-slate-950 p-4 text-slate-100" : ""
-			}`}
+			className={`space-y-7 transition-colors ${nightMode ? "rounded-[36px]text-slate-100" : ""}`}
 		>
 			<section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
 				<div
@@ -215,13 +215,16 @@ function StoryDetailPage() {
 								<p
 									className={`font-heading text-3xl ${nightMode ? "text-slate-50" : "text-slate-900"}`}
 								>
-									Cerita ini siap dipublikasikan.
+									{story.isPublic
+										? "Cerita ini sedang tampil di publik."
+										: "Cerita ini siap dipublikasikan."}
 								</p>
 								<p
 									className={`text-sm leading-7 ${nightMode ? "text-slate-300" : "text-slate-600"}`}
 								>
-									Setelah semua audio bagian selesai dibuat, cerita bisa dipublikasikan ke library
-									publik.
+									{story.isPublic
+										? "Cerita ini sudah muncul di perpustakaan publik. Kamu bisa tetap membiarkannya terbuka atau menyembunyikannya kembali kapan saja."
+										: "Setelah unlock, cerita premium otomatis tetap private dan masuk ke Cerita Saya. Kamu bisa membiarkannya tetap pribadi atau membagikannya ke library publik kapan saja. Audio per bagian tetap opsional dan bisa dibuat nanti."}
 								</p>
 							</div>
 							<Button
@@ -242,10 +245,11 @@ function StoryDetailPage() {
 												isPublic: result.isPublic,
 												publicSlug: result.publicSlug,
 											}));
+											await router.invalidate();
 											toast.success(
 												result.isPublic
 													? "Cerita dipublikasikan."
-													: "Cerita disembunyikan dari library.",
+													: "Cerita disembunyikan dari publik.",
 											);
 										} catch (error) {
 											toast.error(
@@ -255,13 +259,13 @@ function StoryDetailPage() {
 									});
 								}}
 							>
-								{story.isPublic ? "Sembunyikan dari Library" : "Jadikan Publik"}
+								{story.isPublic ? "Sembunyikan dari publik" : "Jadikan Publik"}
 							</Button>
 							{story.publicSlug ? (
 								<Link
 									to="/s/$slug"
 									params={{ slug: story.publicSlug }}
-									className="text-sm font-semibold text-orange-600"
+									className="text-sm font-semibold text-orange-600 ml-2"
 								>
 									Buka versi publik
 								</Link>

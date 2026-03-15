@@ -12,9 +12,16 @@ import type {
 	CreateStoryInput,
 	LibraryQueryInput,
 	PaymentRequestInput,
+	PrivateLibraryQueryInput,
 	StoryPublicInput,
 } from "./story.schemas";
-import type { StoryDetail, StoryLibraryCard, StoryLibraryResult } from "./story.types";
+import type {
+	StoryDetail,
+	StoryLibraryCard,
+	StoryLibraryResult,
+	StoryPrivateLibraryCard,
+	StoryPrivateLibraryResult,
+} from "./story.types";
 
 const DAILY_FREE_LIMIT = 3;
 const PAGE_SIZE = 9;
@@ -224,6 +231,30 @@ async function serializeCard(row: typeof schema.stories.$inferSelect): Promise<S
 	};
 }
 
+async function serializePrivateCard(
+	row: typeof schema.stories.$inferSelect,
+): Promise<StoryPrivateLibraryCard> {
+	return {
+		id: row.id,
+		title: row.title,
+		theme: row.theme,
+		age: row.age,
+		coverImageUrl: row.coverImageKey
+			? await createSignedMediaUrl({
+					storyId: row.id,
+					index: 0,
+					kind: "image",
+					key: row.coverImageKey,
+				})
+			: undefined,
+		previewExcerpt: row.previewExcerpt ?? undefined,
+		createdAt: toIsoDate(row.createdAt),
+		paidAt: row.paidAt ? toIsoDate(row.paidAt) : null,
+		isPublic: row.isPublic,
+		publicSlug: row.publicSlug,
+	};
+}
+
 async function getOwnedStoryRow(storyId: string, userId: string) {
 	return getDb().query.stories.findFirst({
 		where: and(eq(schema.stories.id, storyId), eq(schema.stories.clerkUserId, userId)),
@@ -394,6 +425,36 @@ export async function listPublicStories(query: LibraryQueryInput): Promise<Story
 		page: query.page,
 		pageSize: PAGE_SIZE,
 		sort: query.sort,
+		totalItems,
+		hasNextPage: offset + items.length < totalItems,
+	};
+}
+
+export async function listPrivateStories(
+	query: PrivateLibraryQueryInput,
+): Promise<StoryPrivateLibraryResult> {
+	const userId = await requireUserId();
+	const db = getDb();
+	const offset = (query.page - 1) * PAGE_SIZE;
+
+	const [countRow] = await db
+		.select({ count: sql<number>`count(*)` })
+		.from(schema.stories)
+		.where(and(eq(schema.stories.clerkUserId, userId), eq(schema.stories.isPaid, true)));
+
+	const items = await db.query.stories.findMany({
+		where: and(eq(schema.stories.clerkUserId, userId), eq(schema.stories.isPaid, true)),
+		orderBy: [desc(schema.stories.paidAt), desc(schema.stories.createdAt)],
+		limit: PAGE_SIZE,
+		offset,
+	});
+
+	const totalItems = Number(countRow?.count ?? 0);
+
+	return {
+		items: await Promise.all(items.map((item) => serializePrivateCard(item))),
+		page: query.page,
+		pageSize: PAGE_SIZE,
 		totalItems,
 		hasNextPage: offset + items.length < totalItems,
 	};
@@ -600,11 +661,8 @@ export async function setStoryPublicState(input: StoryPublicInput) {
 		throw new Error("Cerita tidak ditemukan.");
 	}
 
-	if (
-		!story.isPaid ||
-		!story.parts.every((part) => part.voiceKey && part.voiceStatus === "generated")
-	) {
-		throw new Error("Cerita harus sudah dibayar dan punya audio penuh sebelum dipublikasikan.");
+	if (input.isPublic && !story.isPaid) {
+		throw new Error("Cerita harus sudah dibayar sebelum dipublikasikan.");
 	}
 
 	const publicSlug = input.isPublic
