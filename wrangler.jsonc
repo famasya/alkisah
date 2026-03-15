@@ -14,7 +14,8 @@
 		{
 			"binding": "DB",
 			"database_name": "alkisah",
-			"database_id": "ff99adfe-ea7b-43fc-8121-7f5f77b5b5cf",
+			"database_id": "fa94f0db-607a-4fca-a682-8a7adb3fc0bd",
+			"migrations_dir": "./drizzle",
 		},
 	],
 	"placement": {
@@ -24,7 +25,10 @@
     "logs": {
       "enabled": true,
       "invocation_logs": true
-    }
+    },
+		"traces": {
+			"enabled": true
+		}
   },
 	"r2_buckets": [
 		{
