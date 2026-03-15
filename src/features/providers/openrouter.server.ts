@@ -21,19 +21,7 @@ type StoryPartRegenerationResult = {
 	illustrationPrompt: string;
 };
 
-const MIN_NARRATION_WORDS = 7;
-
-function countWords(value: string) {
-	return value.trim().split(/\s+/).filter(Boolean).length;
-}
-
-const narrationSentenceSchema = z
-	.string()
-	.trim()
-	.min(1)
-	.refine((value) => countWords(value) >= MIN_NARRATION_WORDS, {
-		message: `Each narration sentence must contain at least ${MIN_NARRATION_WORDS} words.`,
-	});
+const narrationSentenceSchema = z.string().trim().min(1);
 
 const storyWriterBaseSystemPrompt = `
 You are a professional children's story writer.
@@ -116,7 +104,6 @@ const storyGenerationSchema = z.object({
 	parts: z
 		.array(
 			z.object({
-				order: z.number().int().positive().optional(),
 				narrations: z.array(narrationSentenceSchema).min(4).max(5),
 				illustrationPrompt: z.string().trim().min(1),
 			}),
@@ -181,6 +168,47 @@ function normalizeMessageContent(content: unknown) {
 	return "";
 }
 
+function logOpenRouterError(action: string, error: unknown, metadata?: Record<string, unknown>) {
+	console.log(`[openrouter] ${action} failed`, error);
+
+	if (!(error instanceof Error)) {
+		console.log(`[openrouter] ${action} details`, {
+			metadata,
+			error,
+		});
+		return;
+	}
+
+	const details: Record<string, unknown> = {
+		metadata,
+		name: error.name,
+		message: error.message,
+		stack: error.stack,
+	};
+
+	if ("cause" in error) {
+		details.cause = error.cause;
+	}
+
+	if ("text" in error) {
+		details.text = error.text;
+	}
+
+	if ("response" in error) {
+		details.response = error.response;
+	}
+
+	if ("usage" in error) {
+		details.usage = error.usage;
+	}
+
+	if ("finishReason" in error) {
+		details.finishReason = error.finishReason;
+	}
+
+	console.log(`[openrouter] ${action} details`, details);
+}
+
 export async function generateStoryDraft(input: CreateStoryInput): Promise<StoryGenerationResult> {
 	const themeDetail = input.customTheme ? `${input.theme} (${input.customTheme})` : input.theme;
 	const ageDirection =
@@ -189,39 +217,50 @@ export async function generateStoryDraft(input: CreateStoryInput): Promise<Story
 			: input.age <= 8
 				? "Gunakan bahasa sederhana, emosi yang hangat, dan masalah kecil yang mudah diikuti."
 				: "Tetap gunakan bahasa sederhana seperti bacaan usia 4-8, tetapi biarkan pemecahan masalah terasa sedikit lebih logis.";
-	const { output } = await generateText({
-		model: getTextProvider().chatModel(env.OPENROUTER_TEXT_MODEL),
-		temperature: 0.85,
-		output: Output.object({
-			schema: storyGenerationSchema,
-			name: "alkisah_story_draft",
-			description:
-				"A complete Indonesian bedtime story draft with a reusable character guide and ordered story parts.",
-		}),
-		system: fullStorySystemPrompt,
-		prompt:
-			`Nama anak: ${input.childName}\n` +
-			`Usia: ${input.age}\n` +
-			`Tema: ${themeDetail}\n` +
-			`Arahan usia: ${ageDirection}\n\n` +
-			"Tulis cerita personal lengkap dalam Bahasa Indonesia.\n" +
-			"Ikuti alur ini dengan jelas: pengenalan, masalah kecil, percobaan pertama gagal, percobaan kedua hampir berhasil, twist hangat, lalu resolusi yang memuaskan.\n" +
-			"Buat narasi terasa utuh, lembut, visual, dan enak dibacakan, bukan potongan kalimat yang terlalu pendek.\n" +
-			"Jaga cerita tetap aman, positif, hangat, dan cocok untuk dibacakan sebelum tidur.",
-	});
-	const parsed = storyGenerationSchema.parse(output);
 
-	return {
-		title: parsed.title.trim(),
-		characterGuide: parsed.characterGuide.trim(),
-		parts: parsed.parts.map((part, index) => ({
-			order: typeof part?.order === "number" ? part.order : index + 1,
-			narrations: Array.isArray(part?.narrations)
-				? part.narrations.map((narration) => `${narration ?? ""}`.trim()).filter(Boolean)
-				: [],
-			illustrationPrompt: `${part?.illustrationPrompt ?? ""}`.trim(),
-		})),
-	};
+	try {
+		const { output } = await generateText({
+			model: getTextProvider().chatModel(env.OPENROUTER_TEXT_MODEL),
+			temperature: 0.85,
+			output: Output.object({
+				schema: storyGenerationSchema,
+				name: "alkisah_story_draft",
+				description:
+					"A complete Indonesian bedtime story draft with a reusable character guide and ordered story parts.",
+			}),
+			system: fullStorySystemPrompt,
+			prompt:
+				`Nama anak: ${input.childName}\n` +
+				`Usia: ${input.age}\n` +
+				`Tema: ${themeDetail}\n` +
+				`Arahan usia: ${ageDirection}\n\n` +
+				"Tulis cerita personal lengkap dalam Bahasa Indonesia.\n" +
+				"Ikuti alur ini dengan jelas: pengenalan, masalah kecil, percobaan pertama gagal, percobaan kedua hampir berhasil, twist hangat, lalu resolusi yang memuaskan.\n" +
+				"Buat narasi terasa utuh, lembut, visual, dan enak dibacakan, bukan potongan kalimat yang terlalu pendek.\n" +
+				"Jaga cerita tetap aman, positif, hangat, dan cocok untuk dibacakan sebelum tidur.",
+		});
+		const parsed = storyGenerationSchema.parse(output);
+
+		return {
+			title: parsed.title.trim(),
+			characterGuide: parsed.characterGuide.trim(),
+			parts: parsed.parts.map((part, index) => ({
+				order: index + 1,
+				narrations: Array.isArray(part?.narrations)
+					? part.narrations.map((narration) => `${narration ?? ""}`.trim()).filter(Boolean)
+					: [],
+				illustrationPrompt: `${part?.illustrationPrompt ?? ""}`.trim(),
+			})),
+		};
+	} catch (error) {
+		logOpenRouterError("generateStoryDraft", error, {
+			model: env.OPENROUTER_TEXT_MODEL,
+			childName: input.childName,
+			age: input.age,
+			theme: themeDetail,
+		});
+		throw error;
+	}
 }
 
 export async function regenerateStorySection(input: {
@@ -241,35 +280,46 @@ export async function regenerateStorySection(input: {
 		.map((section) => `Bagian ${section.order}: ${section.narrations.join(" ")}`)
 		.join("\n");
 
-	const { output } = await generateText({
-		model: getTextProvider().chatModel(env.OPENROUTER_TEXT_MODEL),
-		temperature: 0.9,
-		output: Output.object({
-			schema: storyPartRegenerationSchema,
-			name: "alkisah_story_part_regeneration",
-			description:
-				"An updated Indonesian story section that preserves continuity with the surrounding sections.",
-		}),
-		system: sectionRewriteSystemPrompt,
-		prompt:
-			`Judul cerita: ${input.title}\n` +
-			`Nama anak: ${input.childName}\n` +
-			`Usia: ${input.age}\n` +
-			`Tema: ${themeDetail}\n` +
-			`${input.characterGuide ? `Character guide: ${input.characterGuide}\n` : ""}` +
-			`Bagian yang diubah: ${input.currentSectionOrder}\n` +
-			`Narasi bagian saat ini: ${input.currentNarrations.join(" ")}\n` +
-			`Konteks semua bagian:\n${sectionsContext}\n\n` +
-			`Instruksi pengguna untuk bagian ini: ${input.prompt}\n\n` +
-			"Buat ulang hanya bagian tersebut. Pertahankan posisi bagian dalam alur cerita, jangan ubah bagian lain, pastikan hasilnya tetap selaras dengan awal serta akhir cerita, dan hindari kalimat yang terlalu pendek atau terasa terputus-putus.",
-	});
+	try {
+		const { output } = await generateText({
+			model: getTextProvider().chatModel(env.OPENROUTER_TEXT_MODEL),
+			temperature: 0.9,
+			output: Output.object({
+				schema: storyPartRegenerationSchema,
+				name: "alkisah_story_part_regeneration",
+				description:
+					"An updated Indonesian story section that preserves continuity with the surrounding sections.",
+			}),
+			system: sectionRewriteSystemPrompt,
+			prompt:
+				`Judul cerita: ${input.title}\n` +
+				`Nama anak: ${input.childName}\n` +
+				`Usia: ${input.age}\n` +
+				`Tema: ${themeDetail}\n` +
+				`${input.characterGuide ? `Character guide: ${input.characterGuide}\n` : ""}` +
+				`Bagian yang diubah: ${input.currentSectionOrder}\n` +
+				`Narasi bagian saat ini: ${input.currentNarrations.join(" ")}\n` +
+				`Konteks semua bagian:\n${sectionsContext}\n\n` +
+				`Instruksi pengguna untuk bagian ini: ${input.prompt}\n\n` +
+				"Buat ulang hanya bagian tersebut. Pertahankan posisi bagian dalam alur cerita, jangan ubah bagian lain, pastikan hasilnya tetap selaras dengan awal serta akhir cerita, dan hindari kalimat yang terlalu pendek atau terasa terputus-putus.",
+		});
 
-	const parsed = storyPartRegenerationSchema.parse(output);
+		const parsed = storyPartRegenerationSchema.parse(output);
 
-	return {
-		narrations: parsed.narrations.map((narration) => narration.trim()).filter(Boolean),
-		illustrationPrompt: parsed.illustrationPrompt.trim(),
-	};
+		return {
+			narrations: parsed.narrations.map((narration) => narration.trim()).filter(Boolean),
+			illustrationPrompt: parsed.illustrationPrompt.trim(),
+		};
+	} catch (error) {
+		logOpenRouterError("regenerateStorySection", error, {
+			model: env.OPENROUTER_TEXT_MODEL,
+			childName: input.childName,
+			age: input.age,
+			theme: themeDetail,
+			currentSectionOrder: input.currentSectionOrder,
+		});
+		throw error;
+	}
 }
 
 function extractImageSource(content: unknown, imageUrl: string | undefined) {
