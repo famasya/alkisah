@@ -1,9 +1,9 @@
+import { env } from "cloudflare:workers";
 import { redirect } from "@tanstack/react-router";
 import { auth } from "@clerk/tanstack-react-start/server";
 import { nanoid } from "nanoid";
 import { and, desc, eq, getDb, schema, sql } from "~/db/index.server";
 import type { StoryPartRecord } from "~/db/schema";
-import { getAppUrl } from "~/lib/app-env.server";
 import { createStorySlug } from "~/lib/slug";
 import { now, startOfUtcDay, toIsoDate } from "~/lib/time";
 import { createSignedMediaUrl } from "../media/asset-token.server";
@@ -19,6 +19,7 @@ import type { StoryDetail, StoryLibraryCard, StoryLibraryResult } from "./story.
 const DAILY_FREE_LIMIT = 3;
 const PAGE_SIZE = 9;
 const STORY_PRICE_IDR = 5000;
+const appUrl = env.APP_URL || "http://localhost:3000";
 
 function trimPreview(content: string) {
 	return `${content.split(/\s+/).slice(0, 40).join(" ")}...`;
@@ -493,7 +494,7 @@ export async function createPaymentLinkForStory(input: PaymentRequestInput) {
 	}
 
 	if (story.isPaid) {
-		return { paymentLink: `${getAppUrl()}/stories/${story.id}` };
+		return { paymentLink: `${appUrl}/stories/${story.id}` };
 	}
 
 	if (story.status !== "generated" && story.status !== "payment_pending") {
@@ -534,7 +535,7 @@ export async function createPaymentLinkForStory(input: PaymentRequestInput) {
 		mobile: input.customerMobile,
 		amount: STORY_PRICE_IDR,
 		description: `Unlock Cerita Anak: ${story.title}`,
-		redirectUrl: `${getAppUrl()}/stories/${story.id}?payment=success`,
+		redirectUrl: `${appUrl}/stories/${story.id}?payment=success`,
 	});
 
 	await db.insert(schema.storyPayments).values({
@@ -573,7 +574,7 @@ export async function createPaymentLinkForStory(input: PaymentRequestInput) {
 		.where(eq(schema.stories.id, story.id));
 
 	return {
-		paymentLink: `${getAppUrl()}/stories/${story.id}?payment=success`,
+		paymentLink: `${appUrl}/stories/${story.id}?payment=success`,
 	};
 }
 
@@ -622,7 +623,7 @@ export async function setStoryPublicState(input: StoryPublicInput) {
 	return {
 		isPublic: input.isPublic,
 		publicSlug,
-		publicUrl: publicSlug ? `${getAppUrl()}/s/${publicSlug}` : undefined,
+		publicUrl: publicSlug ? `${appUrl}/s/${publicSlug}` : undefined,
 	};
 }
 

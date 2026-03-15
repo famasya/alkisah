@@ -1,4 +1,4 @@
-import { requireEnv } from "~/lib/app-env.server";
+import { env } from "cloudflare:workers";
 
 type CreateMayarPaymentInput = {
 	name: string;
@@ -27,12 +27,12 @@ type MayarPaymentDetailResponse = {
 };
 
 function getBaseUrl() {
-	return requireEnv("MAYAR_API_BASE_URL").replace(/\/$/, "");
+	return env.MAYAR_API_BASE_URL.replace(/\/$/, "");
 }
 
 function getHeaders() {
 	return {
-		Authorization: `Bearer ${requireEnv("MAYAR_API_KEY")}`,
+		Authorization: `Bearer ${env.MAYAR_API_KEY}`,
 		"Content-Type": "application/json",
 	};
 }

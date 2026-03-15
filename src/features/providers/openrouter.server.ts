@@ -1,8 +1,8 @@
+import { env } from "cloudflare:workers";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { generateText, Output } from "ai";
 import { OpenRouter } from "@openrouter/sdk";
 import { z } from "zod";
-import { getAppUrl, requireEnv } from "~/lib/app-env.server";
 import type { CreateStoryInput } from "../stories/story.schemas";
 
 type StoryGenerationResult = {
@@ -33,11 +33,12 @@ let client: OpenRouter | undefined;
 let textProvider:
 	| ReturnType<typeof createOpenAICompatible<string, string, string, string>>
 	| undefined;
+const appUrl = env.APP_URL || "http://localhost:3000";
 
 function getClient() {
 	client ??= new OpenRouter({
-		apiKey: requireEnv("OPENROUTER_API_KEY"),
-		httpReferer: getAppUrl(),
+		apiKey: env.OPENROUTER_API_KEY,
+		httpReferer: appUrl,
 		xTitle: "Alkisah",
 	});
 
@@ -48,9 +49,9 @@ function getTextProvider() {
 	textProvider ??= createOpenAICompatible({
 		name: "openrouter",
 		baseURL: "https://openrouter.ai/api/v1",
-		apiKey: requireEnv("OPENROUTER_API_KEY"),
+		apiKey: env.OPENROUTER_API_KEY,
 		headers: {
-			"HTTP-Referer": getAppUrl(),
+			"HTTP-Referer": appUrl,
 			"X-Title": "Alkisah",
 		},
 		supportsStructuredOutputs: true,
@@ -85,7 +86,7 @@ export async function generateStoryDraft(input: CreateStoryInput): Promise<Story
 			? "Use simple rhythmic language, repetition, concrete imagery, and one gentle idea."
 			: "Use accessible language with a clear problem, a few attempts, and a warm resolution.";
 	const { output } = await generateText({
-		model: getTextProvider().chatModel(requireEnv("OPENROUTER_TEXT_MODEL")),
+		model: getTextProvider().chatModel(env.OPENROUTER_TEXT_MODEL),
 		temperature: 0.85,
 		output: Output.object({
 			schema: storyGenerationSchema,
@@ -141,7 +142,7 @@ function extractImageSource(content: unknown, imageUrl: string | undefined) {
 export async function generateIllustration(prompt: string, characterGuide?: string) {
 	const payload = await getClient().chat.send({
 		chatGenerationParams: {
-			model: requireEnv("OPENROUTER_IMAGE_MODEL"),
+			model: env.OPENROUTER_IMAGE_MODEL,
 			modalities: ["image"],
 			messages: [
 				{

@@ -1,11 +1,11 @@
+import { env } from "cloudflare:workers";
 import { ElevenLabsClient, ElevenLabsError } from "@elevenlabs/elevenlabs-js";
-import { requireEnv } from "~/lib/app-env.server";
 
 let client: ElevenLabsClient | undefined;
 
 function getClient() {
 	client ??= new ElevenLabsClient({
-		apiKey: requireEnv("ELEVENLABS_API_KEY"),
+		apiKey: env.ELEVENLABS_API_KEY,
 	});
 
 	return client;
@@ -35,7 +35,7 @@ function getErrorDetail(body: unknown) {
 }
 
 export async function generateStoryAudio(content: string) {
-	const voiceId = requireEnv("ELEVENLABS_VOICE_ID");
+	const voiceId = env.ELEVENLABS_VOICE_ID;
 	try {
 		const audioStream = await getClient().textToSpeech.convert(voiceId, {
 			text: content,

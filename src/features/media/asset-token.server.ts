@@ -1,4 +1,4 @@
-import { requireEnv } from "~/lib/app-env.server";
+import { env } from "cloudflare:workers";
 
 type MediaAssetKind = "audio" | "image";
 
@@ -31,7 +31,7 @@ function buildPayload(input: {
 async function getSigningKey() {
 	signingKeyPromise ??= crypto.subtle.importKey(
 		"raw",
-		encoder.encode(requireEnv("CLERK_SECRET_KEY")),
+		encoder.encode(env.CLERK_SECRET_KEY),
 		{ name: "HMAC", hash: "SHA-256" },
 		false,
 		["sign"],

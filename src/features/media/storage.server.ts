@@ -1,11 +1,11 @@
-import { getAppEnv } from "~/lib/app-env.server";
+import { env } from "cloudflare:workers";
 
 export async function uploadBinaryObject(
 	key: string,
 	body: ArrayBuffer | ArrayBufferView | string,
 	contentType: string,
 ) {
-	await getAppEnv().MEDIA_BUCKET.put(key, body, {
+	await env.MEDIA_BUCKET.put(key, body, {
 		httpMetadata: {
 			contentType,
 			cacheControl: "public, max-age=31536000, immutable",
@@ -16,5 +16,5 @@ export async function uploadBinaryObject(
 }
 
 export async function getStoredObject(key: string) {
-	return getAppEnv().MEDIA_BUCKET.get(key);
+	return env.MEDIA_BUCKET.get(key);
 }
