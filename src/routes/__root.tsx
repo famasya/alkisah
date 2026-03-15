@@ -1,8 +1,12 @@
 /// <reference types="vite/client" />
 import type { QueryClient } from "@tanstack/react-query";
+import { ClerkProvider } from "@clerk/tanstack-react-start";
+import { shadcn } from "@clerk/themes";
 import { HeadContent, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import type * as React from "react";
+import { Toaster } from "react-hot-toast";
+import { SiteShell } from "~/components/site-shell";
 import { DefaultCatchBoundary } from "~/components/default-catch-bounday";
 import { NotFound } from "~/components/not-found";
 import appCss from "~/styles/app.css?url";
@@ -21,20 +25,14 @@ export const Route = createRootRouteWithContext<{
 				content: "width=device-width, initial-scale=1",
 			},
 			...seo({
-				title: "TanStack Start | Type-Safe, Client-First, Full-Stack React Framework",
-				description: `TanStack Start is a type-safe, client-first, full-stack React framework. `,
+				title: "Alkisah | Cerita Anak Personal dengan Audio AI",
+				description:
+					"Buat cerita anak personal dalam 10 detik, buka audio premium dengan sekali bayar, dan bagikan ke perpustakaan cerita publik.",
 			}),
 		],
 		links: [
 			{ rel: "stylesheet", href: appCss },
-			{ rel: "manifest", href: "/site.webmanifest", color: "#fffff" },
-			{ rel: "icon", href: "/favicon.ico" },
-		],
-		scripts: [
-			{
-				src: "/customScript.js",
-				type: "text/javascript",
-			},
+			{ rel: "manifest", href: "/site.webmanifest", color: "#fff8ef" },
 		],
 	}),
 	errorComponent: DefaultCatchBoundary,
@@ -44,14 +42,26 @@ export const Route = createRootRouteWithContext<{
 
 function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
-		<html lang="en">
+		<html lang="id">
 			<head>
 				<HeadContent />
 			</head>
-			<body className="h-screen w-full">
-				{children}
-				<TanStackRouterDevtools position="bottom-right" />
-				<Scripts />
+			<body className="min-h-screen w-full">
+				<ClerkProvider appearance={{ baseTheme: shadcn }}>
+					<SiteShell>{children}</SiteShell>
+					<Toaster
+						position="top-right"
+						toastOptions={{
+							style: {
+								background: "#0f172a",
+								color: "#fff",
+								borderRadius: "18px",
+							},
+						}}
+					/>
+					<TanStackRouterDevtools position="bottom-right" />
+					<Scripts />
+				</ClerkProvider>
 			</body>
 		</html>
 	);

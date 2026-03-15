@@ -1,10 +1,28 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "tanstack-start-app",
+	"name": "alkisah",
 	"compatibility_date": "2025-09-24",
 	"compatibility_flags": ["nodejs_compat"],
 	"main": "@tanstack/react-start/server-entry",
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "alkisah-db",
+			"database_id": "replace-with-real-d1-id",
+		},
+	],
+	"r2_buckets": [
+		{
+			"binding": "MEDIA_BUCKET",
+			"bucket_name": "alkisah-media",
+		},
+	],
 	"vars": {
-		"MY_VAR": "Hello from Cloudflare",
+		"APP_URL": "http://localhost:3000",
+		"VITE_CLERK_PUBLISHABLE_KEY": "pk_test_replace_me",
+		"OPENROUTER_TEXT_MODEL": "x-ai/grok-4.1-fast",
+		"OPENROUTER_IMAGE_MODEL": "bytedance-seed/seedream-4.5",
+		"ELEVENLABS_VOICE_ID": "replace-with-elevenlabs-voice-id",
+		"MAYAR_API_BASE_URL": "https://api.mayar.id/hl/v1",
 	},
 }

@@ -1,8 +1,8 @@
 {
-	"name": "",
-	"short_name": "",
+	"name": "Alkisah",
+	"short_name": "Alkisah",
 	"icons": [],
-	"theme_color": "#ffffff",
-	"background_color": "#ffffff",
+	"theme_color": "#fff8ef",
+	"background_color": "#fff8ef",
 	"display": "standalone"
 }

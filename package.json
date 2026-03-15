@@ -8,6 +8,8 @@
 		"build": "vite build && tsc --noEmit",
 		"preview": "vite preview",
 		"deploy": "wrangler deploy",
+		"db:generate": "drizzle-kit generate",
+		"db:migrate:local": "wrangler d1 execute DB --local --file=./drizzle/0000_alkisah.sql",
 		"lint": "bunx oxlint --fix . && bunx oxfmt --write .",
 		"lint:check": "bunx oxlint . && bunx oxfmt --check .",
 		"format": "bunx oxfmt --write .",
@@ -15,6 +17,10 @@
 		"postinstall": "npm run cf-typegen"
 	},
 	"dependencies": {
+		"@clerk/tanstack-react-start": "^1.0.4",
+		"@clerk/themes": "^2.4.57",
+		"@elevenlabs/elevenlabs-js": "^2.39.0",
+		"@openrouter/sdk": "^0.9.11",
 		"@radix-ui/react-slot": "^1.2.4",
 		"@tailwindcss/postcss": "^4.2.1",
 		"@tanstack/react-query": "^5.90.21",
@@ -24,10 +30,16 @@
 		"@tanstack/react-start": "^1.166.8",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
+		"date-fns": "^4.1.0",
+		"drizzle-orm": "^0.45.1",
+		"framer-motion": "^12.36.0",
 		"lucide-react": "^0.577.0",
+		"nanoid": "^5.1.6",
 		"react": "^19.2.4",
 		"react-dom": "^19.2.4",
-		"tailwind-merge": "^3.5.0"
+		"react-hot-toast": "^2.6.0",
+		"tailwind-merge": "^3.5.0",
+		"zod": "^4.3.6"
 	},
 	"devDependencies": {
 		"@cloudflare/vite-plugin": "^1.27.0",
@@ -36,6 +48,7 @@
 		"@types/react-dom": "^19.2.3",
 		"@vitejs/plugin-react": "^6.0.0",
 		"autoprefixer": "^10.4.27",
+		"drizzle-kit": "^0.31.9",
 		"oxfmt": "^0.40.0",
 		"oxlint": "^1.55.0",
 		"postcss": "^8.5.8",

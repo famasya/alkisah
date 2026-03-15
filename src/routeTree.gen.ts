@@ -9,38 +9,176 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SignUpRouteImport } from './routes/sign-up'
+import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as LibraryRouteImport } from './routes/library'
+import { Route as CreateRouteImport } from './routes/create'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as StoriesStoryIdRouteImport } from './routes/stories.$storyId'
+import { Route as SSlugRouteImport } from './routes/s.$slug'
+import { Route as ApiMediaStoriesStoryIdImagesIndexRouteImport } from './routes/api/media/stories/$storyId/images/$index'
+import { Route as ApiMediaStoriesStoryIdAudioIndexRouteImport } from './routes/api/media/stories/$storyId/audio/$index'
 
+const SignUpRoute = SignUpRouteImport.update({
+  id: '/sign-up',
+  path: '/sign-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignInRoute = SignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LibraryRoute = LibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CreateRoute = CreateRouteImport.update({
+  id: '/create',
+  path: '/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StoriesStoryIdRoute = StoriesStoryIdRouteImport.update({
+  id: '/stories/$storyId',
+  path: '/stories/$storyId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SSlugRoute = SSlugRouteImport.update({
+  id: '/s/$slug',
+  path: '/s/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMediaStoriesStoryIdImagesIndexRoute =
+  ApiMediaStoriesStoryIdImagesIndexRouteImport.update({
+    id: '/api/media/stories/$storyId/images/$index',
+    path: '/api/media/stories/$storyId/images/$index',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiMediaStoriesStoryIdAudioIndexRoute =
+  ApiMediaStoriesStoryIdAudioIndexRouteImport.update({
+    id: '/api/media/stories/$storyId/audio/$index',
+    path: '/api/media/stories/$storyId/audio/$index',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/create': typeof CreateRoute
+  '/library': typeof LibraryRoute
+  '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
+  '/s/$slug': typeof SSlugRoute
+  '/stories/$storyId': typeof StoriesStoryIdRoute
+  '/api/media/stories/$storyId/audio/$index': typeof ApiMediaStoriesStoryIdAudioIndexRoute
+  '/api/media/stories/$storyId/images/$index': typeof ApiMediaStoriesStoryIdImagesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/create': typeof CreateRoute
+  '/library': typeof LibraryRoute
+  '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
+  '/s/$slug': typeof SSlugRoute
+  '/stories/$storyId': typeof StoriesStoryIdRoute
+  '/api/media/stories/$storyId/audio/$index': typeof ApiMediaStoriesStoryIdAudioIndexRoute
+  '/api/media/stories/$storyId/images/$index': typeof ApiMediaStoriesStoryIdImagesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/create': typeof CreateRoute
+  '/library': typeof LibraryRoute
+  '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
+  '/s/$slug': typeof SSlugRoute
+  '/stories/$storyId': typeof StoriesStoryIdRoute
+  '/api/media/stories/$storyId/audio/$index': typeof ApiMediaStoriesStoryIdAudioIndexRoute
+  '/api/media/stories/$storyId/images/$index': typeof ApiMediaStoriesStoryIdImagesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/create'
+    | '/library'
+    | '/sign-in'
+    | '/sign-up'
+    | '/s/$slug'
+    | '/stories/$storyId'
+    | '/api/media/stories/$storyId/audio/$index'
+    | '/api/media/stories/$storyId/images/$index'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/create'
+    | '/library'
+    | '/sign-in'
+    | '/sign-up'
+    | '/s/$slug'
+    | '/stories/$storyId'
+    | '/api/media/stories/$storyId/audio/$index'
+    | '/api/media/stories/$storyId/images/$index'
+  id:
+    | '__root__'
+    | '/'
+    | '/create'
+    | '/library'
+    | '/sign-in'
+    | '/sign-up'
+    | '/s/$slug'
+    | '/stories/$storyId'
+    | '/api/media/stories/$storyId/audio/$index'
+    | '/api/media/stories/$storyId/images/$index'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CreateRoute: typeof CreateRoute
+  LibraryRoute: typeof LibraryRoute
+  SignInRoute: typeof SignInRoute
+  SignUpRoute: typeof SignUpRoute
+  SSlugRoute: typeof SSlugRoute
+  StoriesStoryIdRoute: typeof StoriesStoryIdRoute
+  ApiMediaStoriesStoryIdAudioIndexRoute: typeof ApiMediaStoriesStoryIdAudioIndexRoute
+  ApiMediaStoriesStoryIdImagesIndexRoute: typeof ApiMediaStoriesStoryIdImagesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sign-up': {
+      id: '/sign-up'
+      path: '/sign-up'
+      fullPath: '/sign-up'
+      preLoaderRoute: typeof SignUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign-in': {
+      id: '/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof SignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/library': {
+      id: '/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof LibraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/create': {
+      id: '/create'
+      path: '/create'
+      fullPath: '/create'
+      preLoaderRoute: typeof CreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,21 +186,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/stories/$storyId': {
+      id: '/stories/$storyId'
+      path: '/stories/$storyId'
+      fullPath: '/stories/$storyId'
+      preLoaderRoute: typeof StoriesStoryIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/s/$slug': {
+      id: '/s/$slug'
+      path: '/s/$slug'
+      fullPath: '/s/$slug'
+      preLoaderRoute: typeof SSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/media/stories/$storyId/images/$index': {
+      id: '/api/media/stories/$storyId/images/$index'
+      path: '/api/media/stories/$storyId/images/$index'
+      fullPath: '/api/media/stories/$storyId/images/$index'
+      preLoaderRoute: typeof ApiMediaStoriesStoryIdImagesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/media/stories/$storyId/audio/$index': {
+      id: '/api/media/stories/$storyId/audio/$index'
+      path: '/api/media/stories/$storyId/audio/$index'
+      fullPath: '/api/media/stories/$storyId/audio/$index'
+      preLoaderRoute: typeof ApiMediaStoriesStoryIdAudioIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CreateRoute: CreateRoute,
+  LibraryRoute: LibraryRoute,
+  SignInRoute: SignInRoute,
+  SignUpRoute: SignUpRoute,
+  SSlugRoute: SSlugRoute,
+  StoriesStoryIdRoute: StoriesStoryIdRoute,
+  ApiMediaStoriesStoryIdAudioIndexRoute: ApiMediaStoriesStoryIdAudioIndexRoute,
+  ApiMediaStoriesStoryIdImagesIndexRoute:
+    ApiMediaStoriesStoryIdImagesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
+import type { startInstance } from './start.ts'
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }
