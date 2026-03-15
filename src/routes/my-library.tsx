@@ -15,7 +15,7 @@ export const Route = createFileRoute("/my-library")({
 		meta: seo({
 			title: "Cerita Saya | Alkisah",
 			description:
-				"Lihat semua cerita premium milikmu, baik yang private maupun yang sudah kamu bagikan.",
+				"Lihat semua cerita premium milikmu, baik yang private maupun yang sudah Anda bagikan.",
 		}),
 	}),
 	loader: ({ deps }) => listPrivateStoriesFn({ data: deps }),
@@ -35,8 +35,8 @@ function MyLibraryPage() {
 					</div>
 					<p className="font-heading text-4xl text-slate-900">Library milikmu</p>
 					<p className="max-w-2xl text-sm leading-7 text-slate-600">
-						Semua cerita premium yang sudah kamu unlock muncul di sini, baik yang masih private
-						maupun yang sudah kamu bagikan ke publik. Badge pada setiap kartu menandai status
+						Semua cerita premium yang sudah Anda unlock muncul di sini, baik yang masih private
+						maupun yang sudah Anda bagikan ke publik. Badge pada setiap kartu menandai status
 						visibilitasnya.
 					</p>
 				</div>
@@ -58,8 +58,8 @@ function MyLibraryPage() {
 				<section className="rounded-[28px] border border-white/70 bg-white/80 px-6 py-10 text-center shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
 					<p className="font-heading text-3xl text-slate-900">Belum ada cerita premium milikmu.</p>
 					<p className="mt-3 text-sm leading-7 text-slate-600">
-						Buat cerita baru atau unlock cerita yang kamu suka. Setelah paid, ceritanya akan muncul
-						di sini, dan kamu bisa memilih untuk membiarkannya private atau membagikannya ke publik.
+						Buat cerita baru atau unlock cerita yang Anda suka. Setelah paid, ceritanya akan muncul
+						di sini, dan Anda bisa memilih untuk membiarkannya private atau membagikannya ke publik.
 					</p>
 					<div className="mt-6 flex flex-wrap items-center justify-center gap-3">
 						<Button asChild className="rounded-full bg-slate-900 text-white">

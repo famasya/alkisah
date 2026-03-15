@@ -10,6 +10,7 @@ import {
 	createPaymentLinkFn,
 	generateStoryPartAudioFn,
 	getOwnedStoryFn,
+	getViewerFn,
 	processStoryIllustrationsFn,
 	regenerateStoryPartFn,
 	retryStoryPartIllustrationFn,
@@ -28,12 +29,19 @@ export const Route = createFileRoute("/stories/$storyId")({
 				"Baca hasil cerita personal, simpan private secara default, atau bagikan ke publik.",
 		}),
 	}),
-	loader: ({ params }) => getOwnedStoryFn({ data: { storyId: params.storyId } }),
+	loader: async ({ params }) => {
+		const [story, viewer] = await Promise.all([
+			getOwnedStoryFn({ data: { storyId: params.storyId } }),
+			getViewerFn(),
+		]);
+
+		return { story, viewer };
+	},
 	component: StoryDetailPage,
 });
 
 function StoryDetailPage() {
-	const loadedStory = Route.useLoaderData();
+	const { story: loadedStory, viewer } = Route.useLoaderData();
 	const search = Route.useSearch();
 	const router = useRouter();
 	const getOwnedStory = useServerFn(getOwnedStoryFn);
@@ -52,9 +60,7 @@ function StoryDetailPage() {
 	const [regenerationIndex, setRegenerationIndex] = useState<number | null>(null);
 	const [regenerationPrompts, setRegenerationPrompts] = useState<Record<number, string>>({});
 	const [customer, setCustomer] = useState({
-		name: "",
-		email: "",
-		mobile: "",
+		mobile: viewer.profile.phone ?? "",
 	});
 	const [isPending, startTransition] = useTransition();
 	const [isConfirmingPayment, setIsConfirmingPayment] = useState(false);
@@ -425,8 +431,8 @@ function StoryDetailPage() {
 									className={`text-sm leading-7 ${nightMode ? "text-slate-300" : "text-slate-600"}`}
 								>
 									{story.isPublic
-										? "Cerita ini sudah muncul di pustaka publik. Kamu bisa tetap membiarkannya terbuka atau menyembunyikannya kembali kapan saja."
-										: "Setelah unlock, cerita premium otomatis tetap private dan masuk ke Cerita Saya. Kamu bisa membiarkannya tetap pribadi atau membagikannya ke library publik kapan saja. Audio per bagian tetap opsional dan bisa dibuat nanti."}
+										? "Cerita ini sudah muncul di pustaka publik. Anda bisa tetap membiarkannya terbuka atau menyembunyikannya kembali kapan saja."
+										: "Setelah unlock, cerita premium otomatis tetap private dan masuk ke Cerita Saya. Anda bisa membiarkannya tetap pribadi atau membagikannya ke library publik kapan saja. Audio per bagian tetap opsional dan bisa dibuat nanti."}
 								</p>
 							</div>
 							<Button
@@ -493,7 +499,7 @@ function StoryDetailPage() {
 									className={`text-sm leading-7 ${nightMode ? "text-slate-300" : "text-slate-600"}`}
 								>
 									Pembayaran Rp7.000 akan dibawa ke checkout Mayar. Setelah pembayaran berhasil,
-									audio premium tetap dibuat manual per bagian saat kamu butuh, dan cerita bisa
+									audio premium tetap dibuat manual per bagian saat Anda butuh, dan cerita bisa
 									dipublikasikan kapan saja.
 								</p>
 							</div>
@@ -506,8 +512,6 @@ function StoryDetailPage() {
 											const result = await createPaymentLink({
 												data: {
 													storyId: story.id,
-													customerName: customer.name,
-													customerEmail: customer.email,
 													customerMobile: customer.mobile,
 												},
 											});
@@ -525,48 +529,24 @@ function StoryDetailPage() {
 									<span
 										className={`text-sm font-medium ${nightMode ? "text-slate-300" : "text-slate-700"}`}
 									>
-										Nama orang tua
+										Akun untuk invoice
 									</span>
-									<input
-										required
-										value={customer.name}
-										onChange={(event) => {
-											setCustomer((value) => ({ ...value, name: event.target.value }));
-										}}
-										className={`h-12 rounded-2xl border px-4 outline-none transition focus:border-orange-300 focus:bg-white ${
+									<div
+										className={`rounded-2xl border px-4 py-3 text-sm leading-7 ${
 											nightMode
-												? "border-slate-600 bg-slate-800 text-slate-100 placeholder:text-slate-400"
-												: "border-slate-200 bg-slate-50"
+												? "border-slate-600 bg-slate-800 text-slate-200"
+												: "border-slate-200 bg-slate-50 text-slate-600"
 										}`}
-										placeholder="Nama untuk invoice"
-									/>
+									>
+										<p>{viewer.profile.fullName ?? "Nama akun Clerk akan dipakai otomatis."}</p>
+										<p>{viewer.profile.email ?? "Email akun Clerk akan dipakai otomatis."}</p>
+									</div>
 								</label>
 								<label className="grid gap-2">
 									<span
 										className={`text-sm font-medium ${nightMode ? "text-slate-300" : "text-slate-700"}`}
 									>
-										Email
-									</span>
-									<input
-										required
-										type="email"
-										value={customer.email}
-										onChange={(event) => {
-											setCustomer((value) => ({ ...value, email: event.target.value }));
-										}}
-										className={`h-12 rounded-2xl border px-4 outline-none transition focus:border-orange-300 focus:bg-white ${
-											nightMode
-												? "border-slate-600 bg-slate-800 text-slate-100 placeholder:text-slate-400"
-												: "border-slate-200 bg-slate-50"
-										}`}
-										placeholder="nama@email.com"
-									/>
-								</label>
-								<label className="grid gap-2">
-									<span
-										className={`text-sm font-medium ${nightMode ? "text-slate-300" : "text-slate-700"}`}
-									>
-										Nomor WhatsApp / mobile
+										Nomor HP untuk Mayar
 									</span>
 									<input
 										required

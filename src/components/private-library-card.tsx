@@ -49,7 +49,7 @@ export function PrivateLibraryCard({ story }: { story: StoryPrivateLibraryCard }
 					</span>
 					<span className="inline-flex items-center gap-2">
 						<LockKeyhole className="size-4" />
-						{story.isPublic ? "Sudah dibagikan" : "Hanya kamu"}
+						{story.isPublic ? "Sudah dibagikan" : "Hanya Anda"}
 					</span>
 				</div>
 			</div>

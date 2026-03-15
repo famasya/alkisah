@@ -50,7 +50,7 @@ function LandingPage() {
 						<p className="max-w-2xl text-lg leading-8 text-slate-600">
 							Tulis nama anak, pilih usia dan tema, lalu Alkisah menyusun cerita terstruktur dengan
 							jumlah bagian yang dinamis sesuai dengan usia anak, ilustrasi storybook per bagian,
-							dan audio premium yang bisa kamu akses saat kamu siap membayarnya.
+							dan audio premium yang bisa Anda akses saat Anda siap membayarnya.
 						</p>
 					</div>
 					<div className="flex flex-wrap items-center gap-4">

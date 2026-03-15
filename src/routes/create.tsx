@@ -38,9 +38,7 @@ function CreateStoryPage() {
 		age: "5",
 		theme: themeOptions[0],
 		customTheme: "",
-		customerName: "",
-		customerEmail: "",
-		customerMobile: "",
+		customerMobile: viewer.profile.phone ?? "",
 	});
 
 	return (
@@ -60,11 +58,11 @@ function CreateStoryPage() {
 					<p className="text-sm leading-7 text-slate-600">
 						{hasFreeQuota
 							? "Cerita dibagi menjadi 3–8 bagian mengikuti alur yang paling pas untuk anak, atau lebih panjang kalau memang dibutuhkan. Lalu tiap bagian dibuatkan ilustrasinya sendiri supaya lebih nyaman dibaca bersama."
-							: "Kuota gratis harianmu sudah terpakai. Kamu tetap bisa lanjut membuat cerita baru, tetapi pembayaran Rp7.000 dilakukan di depan melalui Mayar dan cerita premium baru akan dibuat setelah pembayaran dikonfirmasi."}
+							: "Kuota gratis harianmu sudah terpakai. Anda tetap bisa lanjut membuat cerita baru, tetapi pembayaran Rp7.000 dilakukan di depan melalui Mayar dan cerita premium baru akan dibuat setelah pembayaran dikonfirmasi."}
 					</p>
 				</div>
 				<div className="rounded-[26px] bg-slate-900 p-5 text-sm leading-7 text-slate-200">
-					<p className="font-semibold text-white">Yang akan kamu dapatkan</p>
+					<p className="font-semibold text-white">Yang akan Anda dapatkan</p>
 					<ul className="mt-3 space-y-2">
 						<li>Cerita yang dinamis sesuai dengan usia anak</li>
 						<li>Ilustrasi pastel storybook untuk tiap bagian</li>
@@ -78,9 +76,9 @@ function CreateStoryPage() {
 				</div>
 				{hasFreeQuota ? null : (
 					<div className="rounded-[26px] border border-slate-900/10 bg-slate-50 px-5 py-4 text-sm leading-7 text-slate-600">
-						Data orang tua dipakai untuk membuat link pembayaran Mayar. Setelah pembayaran sukses,
-						kamu akan dibawa kembali ke halaman cerita dan generasi cerita premium akan berjalan
-						otomatis.
+						Nama dan email diambil otomatis dari akun Clerk Anda untuk checkout Mayar. Setelah
+						pembayaran sukses, Anda akan dibawa kembali ke halaman cerita dan generasi cerita
+						premium akan berjalan otomatis.
 					</div>
 				)}
 			</section>
@@ -110,8 +108,6 @@ function CreateStoryPage() {
 										theme: formState.theme,
 										customTheme: formState.customTheme,
 										mode: hasFreeQuota ? "free" : "paid",
-										customerName: hasFreeQuota ? undefined : formState.customerName,
-										customerEmail: hasFreeQuota ? undefined : formState.customerEmail,
 										customerMobile: hasFreeQuota ? undefined : formState.customerMobile,
 									},
 								});
@@ -200,46 +196,24 @@ function CreateStoryPage() {
 								</p>
 							</div>
 							<label className="grid gap-2">
-								<span className="text-sm font-medium text-slate-700">Nama orang tua</span>
+								<span className="text-sm font-medium text-slate-700">Akun untuk invoice</span>
+								<div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-7 text-slate-600">
+									<p>{viewer.profile.fullName ?? "Nama akun Clerk akan dipakai otomatis."}</p>
+									<p>{viewer.profile.email ?? "Email akun Clerk akan dipakai otomatis."}</p>
+								</div>
+							</label>
+							<label className="grid gap-2">
+								<span className="text-sm font-medium text-slate-700">Nomor HP untuk Mayar</span>
 								<input
 									required
-									value={formState.customerName}
+									value={formState.customerMobile}
 									onChange={(event) => {
-										setFormState((value) => ({ ...value, customerName: event.target.value }));
+										setFormState((value) => ({ ...value, customerMobile: event.target.value }));
 									}}
 									className="h-13 rounded-2xl border border-slate-200 bg-white px-4 outline-none transition focus:border-orange-300"
-									placeholder="Nama untuk invoice"
+									placeholder="0812xxxxxxxx"
 								/>
 							</label>
-							<div className="grid gap-5 sm:grid-cols-2">
-								<label className="grid gap-2">
-									<span className="text-sm font-medium text-slate-700">Email</span>
-									<input
-										required
-										type="email"
-										value={formState.customerEmail}
-										onChange={(event) => {
-											setFormState((value) => ({ ...value, customerEmail: event.target.value }));
-										}}
-										className="h-13 rounded-2xl border border-slate-200 bg-white px-4 outline-none transition focus:border-orange-300"
-										placeholder="nama@email.com"
-									/>
-								</label>
-								<label className="grid gap-2">
-									<span className="text-sm font-medium text-slate-700">
-										Nomor WhatsApp / mobile
-									</span>
-									<input
-										required
-										value={formState.customerMobile}
-										onChange={(event) => {
-											setFormState((value) => ({ ...value, customerMobile: event.target.value }));
-										}}
-										className="h-13 rounded-2xl border border-slate-200 bg-white px-4 outline-none transition focus:border-orange-300"
-										placeholder="0812xxxxxxxx"
-									/>
-								</label>
-							</div>
 						</div>
 					)}
 					<Button

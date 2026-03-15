@@ -12,29 +12,11 @@ export const createStorySchema = z
 		theme: z.string().trim().min(2).max(40),
 		customTheme: z.string().optional().transform(normalizeOptional),
 		mode: z.enum(["free", "paid"]).default("free"),
-		customerName: z.string().optional().transform(normalizeOptional),
-		customerEmail: z.string().optional().transform(normalizeOptional).pipe(z.email().optional()),
 		customerMobile: z.string().optional().transform(normalizeOptional),
 	})
 	.superRefine((value, ctx) => {
 		if (value.mode !== "paid") {
 			return;
-		}
-
-		if (!value.customerName) {
-			ctx.addIssue({
-				code: "custom",
-				path: ["customerName"],
-				message: "Nama orang tua wajib diisi untuk cerita berbayar.",
-			});
-		}
-
-		if (!value.customerEmail) {
-			ctx.addIssue({
-				code: "custom",
-				path: ["customerEmail"],
-				message: "Email wajib diisi untuk cerita berbayar.",
-			});
 		}
 
 		if (
@@ -45,15 +27,13 @@ export const createStorySchema = z
 			ctx.addIssue({
 				code: "custom",
 				path: ["customerMobile"],
-				message: "Nomor WhatsApp / mobile wajib diisi dengan format yang valid.",
+				message: "Nomor HP wajib diisi dengan format yang valid.",
 			});
 		}
 	});
 
 export const paymentRequestSchema = z.object({
 	storyId: z.string().trim().min(1),
-	customerName: z.string().trim().min(2).max(100),
-	customerEmail: z.string().trim().email(),
 	customerMobile: z.string().trim().min(8).max(20),
 });
 

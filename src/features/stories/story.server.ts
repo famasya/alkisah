@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { redirect } from "@tanstack/react-router";
-import { auth } from "@clerk/tanstack-react-start/server";
+import { auth, clerkClient } from "@clerk/tanstack-react-start/server";
 import { nanoid } from "nanoid";
 import { and, desc, eq, getDb, schema, sql } from "~/db/index.server";
 import type { StoryPartRecord } from "~/db/schema";
@@ -28,6 +28,11 @@ const DAILY_FREE_LIMIT = 3;
 const PAGE_SIZE = 9;
 const STORY_PRICE_IDR = 7000;
 const appUrl = env.APP_URL || "http://localhost:3000";
+
+function normalizeOptionalString(value: string | null | undefined) {
+	const trimmed = value?.trim();
+	return trimmed ? trimmed : undefined;
+}
 
 function trimPreview(content: string) {
 	return `${content.split(/\s+/).slice(0, 40).join(" ")}...`;
@@ -207,9 +212,87 @@ async function ensureProfile(
 				updatedAt: current,
 			})
 			.where(eq(schema.profiles.clerkUserId, userId));
+
+		return {
+			...existing,
+			email: profileData?.email ?? existing.email,
+			fullName: profileData?.fullName ?? existing.fullName,
+			phone: profileData?.phone ?? existing.phone,
+			updatedAt: current,
+		};
 	}
 
 	return existing;
+}
+
+async function getClerkProfile(userId: string) {
+	try {
+		const user = await clerkClient().users.getUser(userId);
+		const primaryEmail =
+			user.emailAddresses.find((value) => value.id === user.primaryEmailAddressId)?.emailAddress ??
+			user.emailAddresses[0]?.emailAddress;
+		const primaryPhone =
+			user.phoneNumbers.find((value) => value.id === user.primaryPhoneNumberId)?.phoneNumber ??
+			user.phoneNumbers[0]?.phoneNumber;
+		const fullName =
+			[user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
+			user.username ||
+			primaryEmail?.split("@")[0];
+
+		return {
+			email: normalizeOptionalString(primaryEmail),
+			fullName: normalizeOptionalString(fullName),
+			phone: normalizeOptionalString(primaryPhone),
+		};
+	} catch {
+		return {};
+	}
+}
+
+async function getResolvedProfile(userId: string) {
+	const profile = await ensureProfile(userId);
+	const clerkProfile = await getClerkProfile(userId);
+	const nextProfile = {
+		email: clerkProfile.email ?? profile.email ?? undefined,
+		fullName: clerkProfile.fullName ?? profile.fullName ?? undefined,
+		phone: profile.phone ?? clerkProfile.phone ?? undefined,
+	};
+
+	if (
+		nextProfile.email !== profile.email ||
+		nextProfile.fullName !== profile.fullName ||
+		nextProfile.phone !== profile.phone
+	) {
+		return await ensureProfile(userId, nextProfile);
+	}
+
+	return profile;
+}
+
+async function resolveBillingContact(userId: string, input?: { customerMobile?: string }) {
+	const profile = await getResolvedProfile(userId);
+	const customerName = normalizeOptionalString(profile.fullName);
+	const customerEmail = normalizeOptionalString(profile.email);
+	const customerMobile =
+		normalizeOptionalString(input?.customerMobile) ?? normalizeOptionalString(profile.phone);
+
+	if (!customerName) {
+		throw new Error("Nama akun Clerk belum tersedia. Lengkapi nama akun sebelum checkout.");
+	}
+
+	if (!customerEmail) {
+		throw new Error("Email akun Clerk belum tersedia. Lengkapi email akun sebelum checkout.");
+	}
+
+	if (!customerMobile || customerMobile.length < 8 || customerMobile.length > 20) {
+		throw new Error("Nomor HP wajib diisi dengan format yang valid untuk checkout Mayar.");
+	}
+
+	return {
+		customerName,
+		customerEmail,
+		customerMobile,
+	};
 }
 
 async function serializeStory(row: typeof schema.stories.$inferSelect): Promise<StoryDetail> {
@@ -338,7 +421,7 @@ async function getPublicStoryRow(slug: string) {
 
 export async function getViewer() {
 	const userId = await requireUserId();
-	const profile = await ensureProfile(userId);
+	const profile = await getResolvedProfile(userId);
 	return {
 		userId,
 		profile,
@@ -355,9 +438,7 @@ function buildGenerationInputFromStory(
 		theme: story.theme,
 		customTheme: story.customTheme ?? undefined,
 		mode: story.isPaid ? "paid" : "free",
-		customerEmail: undefined,
 		customerMobile: undefined,
-		customerName: undefined,
 	};
 }
 
@@ -397,7 +478,7 @@ async function generateAndPersistStoryDraft(input: {
 
 export async function createStory(input: CreateStoryInput) {
 	const userId = await requireUserId();
-	const profile = await ensureProfile(userId);
+	const profile = await getResolvedProfile(userId);
 	const isPaidCreate = input.mode === "paid";
 
 	if (!isPaidCreate && profile.dailyGenerates >= DAILY_FREE_LIMIT) {
@@ -409,12 +490,17 @@ export async function createStory(input: CreateStoryInput) {
 	const db = getDb();
 	const createdAt = now();
 	const storyId = nanoid(16);
+	const billingContact = isPaidCreate
+		? await resolveBillingContact(userId, {
+				customerMobile: input.customerMobile,
+			})
+		: undefined;
 
 	if (isPaidCreate) {
 		await ensureProfile(userId, {
-			email: input.customerEmail,
-			fullName: input.customerName,
-			phone: input.customerMobile,
+			email: billingContact?.customerEmail,
+			fullName: billingContact?.customerName,
+			phone: billingContact?.customerMobile,
 		});
 	} else {
 		await db
@@ -450,9 +536,9 @@ export async function createStory(input: CreateStoryInput) {
 	if (isPaidCreate) {
 		try {
 			const payment = await createMayarPaymentLink({
-				name: input.customerName!,
-				email: input.customerEmail!,
-				mobile: input.customerMobile!,
+				name: billingContact!.customerName,
+				email: billingContact!.customerEmail,
+				mobile: billingContact!.customerMobile,
 				amount: STORY_PRICE_IDR,
 				description: `Buat Cerita Premium: ${input.childName}`,
 				redirectUrl: `${appUrl}/stories/${storyId}?payment=success`,
@@ -463,9 +549,9 @@ export async function createStory(input: CreateStoryInput) {
 				paymentId: payment.id,
 				transactionId: payment.transactionId,
 				paymentLink: payment.paymentLink,
-				customerName: input.customerName!,
-				customerEmail: input.customerEmail!,
-				customerMobile: input.customerMobile!,
+				customerName: billingContact!.customerName,
+				customerEmail: billingContact!.customerEmail,
+				customerMobile: billingContact!.customerMobile,
 				rawPayload: { mode: "paid_create" },
 			});
 
@@ -771,16 +857,19 @@ export async function createPaymentLinkForStory(input: PaymentRequestInput) {
 		return { paymentLink: pendingPayment.paymentLink };
 	}
 
+	const billingContact = await resolveBillingContact(userId, {
+		customerMobile: input.customerMobile,
+	});
 	await ensureProfile(userId, {
-		email: input.customerEmail,
-		fullName: input.customerName,
-		phone: input.customerMobile,
+		email: billingContact.customerEmail,
+		fullName: billingContact.customerName,
+		phone: billingContact.customerMobile,
 	});
 
 	const payment = await createMayarPaymentLink({
-		name: input.customerName,
-		email: input.customerEmail,
-		mobile: input.customerMobile,
+		name: billingContact.customerName,
+		email: billingContact.customerEmail,
+		mobile: billingContact.customerMobile,
 		amount: STORY_PRICE_IDR,
 		description: `Unlock Cerita Anak: ${story.title}`,
 		redirectUrl: `${appUrl}/stories/${story.id}?payment=success`,
@@ -791,9 +880,9 @@ export async function createPaymentLinkForStory(input: PaymentRequestInput) {
 		paymentId: payment.id,
 		transactionId: payment.transactionId,
 		paymentLink: payment.paymentLink,
-		customerName: input.customerName,
-		customerEmail: input.customerEmail,
-		customerMobile: input.customerMobile,
+		customerName: billingContact.customerName,
+		customerEmail: billingContact.customerEmail,
+		customerMobile: billingContact.customerMobile,
 		rawPayload: { mode: "unlock_existing_story" },
 	});
 	const current = now();
