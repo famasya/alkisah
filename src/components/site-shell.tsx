@@ -1,7 +1,34 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { Sparkles } from "lucide-react";
+import { useUser, UserButton } from "@clerk/tanstack-react-start";
 import { Button } from "~/components/ui/button";
+
+function AuthButtons() {
+	const { isSignedIn, isLoaded } = useUser();
+
+	if (!isLoaded) {
+		return null;
+	}
+
+	if (isSignedIn) {
+		return <UserButton />;
+	}
+
+	return (
+		<>
+			<Button asChild variant="ghost" className="hidden rounded-full md:inline-flex">
+				<Link to="/sign-in">Masuk</Link>
+			</Button>
+			<Button
+				asChild
+				className="rounded-full bg-slate-900 text-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
+			>
+				<Link to="/sign-up">Mulai Gratis</Link>
+			</Button>
+		</>
+	);
+}
 
 export function SiteShell({ children }: { children: ReactNode }) {
 	return (
@@ -35,15 +62,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
 							</Link>
 						</nav>
 						<div className="flex items-center gap-3">
-							<Button asChild variant="ghost" className="hidden rounded-full md:inline-flex">
-								<Link to="/sign-in">Masuk</Link>
-							</Button>
-							<Button
-								asChild
-								className="rounded-full bg-slate-900 text-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
-							>
-								<Link to="/sign-up">Mulai Gratis</Link>
-							</Button>
+							<AuthButtons />
 						</div>
 					</div>
 				</header>

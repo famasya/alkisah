@@ -60,8 +60,8 @@ function LandingPage() {
 						</p>
 						<p className="max-w-2xl text-lg leading-8 text-slate-600">
 							Tulis nama anak, pilih usia dan tema, lalu Alkisah menyusun cerita terstruktur dengan
-							empat bagian, ilustrasi storybook, dan audio premium yang bisa dibuka saat kamu siap
-							membayarnya.
+							jumlah bagian yang fleksibel, ilustrasi storybook per bagian, dan audio premium yang
+							bisa dibuka saat kamu siap membayarnya.
 						</p>
 					</div>
 					<div className="flex flex-wrap items-center gap-4">
@@ -97,7 +97,7 @@ function LandingPage() {
 						</div>
 						<div className="rounded-[26px] border border-white/70 bg-white/80 p-5 shadow-[0_22px_60px_rgba(15,23,42,0.07)]">
 							<p className="text-sm font-medium text-slate-500">Format cerita</p>
-							<p className="mt-3 font-heading text-4xl">4 Part</p>
+							<p className="mt-3 font-heading text-4xl">Fleksibel</p>
 						</div>
 					</div>
 				</motion.div>
@@ -121,7 +121,7 @@ function LandingPage() {
 									</p>
 								</div>
 								<div className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white">
-									4 bagian
+									Fleksibel
 								</div>
 							</div>
 							<div className="grid gap-4">
@@ -164,11 +164,12 @@ function LandingPage() {
 
 			<section className="grid gap-6 rounded-[32px] border border-slate-900/5 bg-slate-900 px-6 py-8 text-white shadow-[0_34px_100px_rgba(15,23,42,0.22)] lg:grid-cols-[0.9fr_1.1fr] lg:px-10">
 				<div className="space-y-4">
-					<p className="font-heading text-3xl">Kenapa struktur 4 bagian?</p>
+					<p className="font-heading text-3xl">Kenapa struktur fleksibel?</p>
 					<p className="text-sm leading-7 text-slate-300">
-						Agar setiap ilustrasi benar-benar bermakna, cerita dibangun dalam part-part kecil:
-						pengenalan, masalah, upaya, dan resolusi. Ini membuat pengalaman membaca lebih visual
-						dan lebih nyaman untuk anak kecil.
+						Agar setiap ilustrasi benar-benar bermakna, cerita dibangun dalam jumlah bagian yang pas
+						untuk ritmenya sendiri. Biasanya 3 sampai 8 bagian, tetapi bisa lebih panjang bila
+						cerita membutuhkannya. Ini membuat pengalaman membaca lebih visual, lebih lentur, dan
+						tetap nyaman untuk anak kecil.
 					</p>
 				</div>
 				<div className="grid gap-4 sm:grid-cols-2">

@@ -20,7 +20,7 @@ export const Route = createFileRoute("/create")({
 		meta: seo({
 			title: "Buat Cerita | Alkisah",
 			description:
-				"Isi detail anak dan tema favoritnya untuk membuat cerita empat bagian dengan ilustrasi AI.",
+				"Isi detail anak dan tema favoritnya untuk membuat cerita berilustrasi dengan jumlah bagian yang fleksibel.",
 		}),
 	}),
 	loader: () => getViewerFn(),
@@ -48,15 +48,16 @@ function CreateStoryPage() {
 				<div className="space-y-3">
 					<p className="font-heading text-4xl text-slate-900">Mulai dari tiga detail sederhana.</p>
 					<p className="text-sm leading-7 text-slate-600">
-						Cerita akan dibangun menjadi empat bagian dengan ritme yang cocok untuk anak, lalu tiap
-						bagian dibuatkan ilustrasi sendiri supaya lebih enak dibaca bersama.
+						Cerita biasanya dibangun menjadi 3 sampai 8 bagian sesuai ritme yang paling cocok untuk
+						anak, tetapi bisa lebih panjang kalau dibutuhkan agar ending-nya tetap utuh. Setelah itu
+						tiap bagian dibuatkan ilustrasi sendiri supaya lebih enak dibaca bersama.
 					</p>
 				</div>
 				<div className="rounded-[26px] bg-slate-900 p-5 text-sm leading-7 text-slate-200">
 					<p className="font-semibold text-white">Yang akan kamu dapatkan</p>
 					<ul className="mt-3 space-y-2">
-						<li>4 bagian cerita berurutan</li>
-						<li>4 ilustrasi bergaya pastel storybook</li>
+						<li>Beberapa bagian cerita berurutan dengan ritme yang fleksibel</li>
+						<li>Ilustrasi pastel storybook untuk tiap bagian</li>
 						<li>Preview suara gratis untuk setiap bagian</li>
 						<li>Audio premium per bagian setelah unlock</li>
 					</ul>
