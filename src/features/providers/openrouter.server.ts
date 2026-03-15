@@ -16,6 +16,11 @@ type StoryGenerationResult = {
 	}>;
 };
 
+type StoryPartRegenerationResult = {
+	narrations: string[];
+	illustrationPrompt: string;
+};
+
 const storyGenerationSchema = z.object({
 	title: z.string().trim().min(1),
 	characterGuide: z.string().trim().min(1),
@@ -28,6 +33,11 @@ const storyGenerationSchema = z.object({
 			}),
 		)
 		.min(3),
+});
+
+const storyPartRegenerationSchema = z.object({
+	narrations: z.array(z.string().trim().min(1)).min(3).max(4),
+	illustrationPrompt: z.string().trim().min(1),
 });
 
 let client: OpenRouter | undefined;
@@ -113,6 +123,55 @@ export async function generateStoryDraft(input: CreateStoryInput): Promise<Story
 				: [],
 			illustrationPrompt: `${part?.illustrationPrompt ?? ""}`.trim(),
 		})),
+	};
+}
+
+export async function regenerateStorySection(input: {
+	childName: string;
+	age: number;
+	theme: string;
+	customTheme?: string | null;
+	title: string;
+	characterGuide?: string;
+	currentSectionOrder: number;
+	currentNarrations: string[];
+	allSections: Array<{ order: number; narrations: string[] }>;
+	prompt: string;
+}): Promise<StoryPartRegenerationResult> {
+	const themeDetail = input.customTheme ? `${input.theme} (${input.customTheme})` : input.theme;
+	const sectionsContext = input.allSections
+		.map((section) => `Bagian ${section.order}: ${section.narrations.join(" ")}`)
+		.join("\n");
+
+	const { output } = await generateText({
+		model: getTextProvider().chatModel(env.OPENROUTER_TEXT_MODEL),
+		temperature: 0.9,
+		output: Output.object({
+			schema: storyPartRegenerationSchema,
+			name: "alkisah_story_part_regeneration",
+			description:
+				"An updated Indonesian story section that preserves continuity with the surrounding sections.",
+		}),
+		system:
+			"You rewrite one section of an Indonesian children's story. Follow the same children-story guideline as the full story generator: age-appropriate, warm, concrete, emotionally safe, and easy to read aloud. Preserve continuity with the rest of the story, keep the same protagonist, and do not introduce a new plot that breaks the ending. Return 3 or 4 short Indonesian narration sentences plus one English illustration prompt for a whimsical pastel storybook image. The illustration prompt must reuse the exact same character wording and outfit/accessory anchors when a character guide is provided.",
+		prompt:
+			`Judul cerita: ${input.title}\n` +
+			`Nama anak: ${input.childName}\n` +
+			`Usia: ${input.age}\n` +
+			`Tema: ${themeDetail}\n` +
+			`${input.characterGuide ? `Character guide: ${input.characterGuide}\n` : ""}` +
+			`Bagian yang diubah: ${input.currentSectionOrder}\n` +
+			`Narasi bagian saat ini: ${input.currentNarrations.join(" ")}\n` +
+			`Konteks semua bagian:\n${sectionsContext}\n\n` +
+			`Instruksi pengguna untuk bagian ini: ${input.prompt}\n\n` +
+			"Buat ulang hanya bagian tersebut. Pertahankan posisi bagian dalam alur cerita, jangan ubah bagian lain, dan pastikan hasilnya tetap selaras dengan awal serta akhir cerita.",
+	});
+
+	const parsed = storyPartRegenerationSchema.parse(output);
+
+	return {
+		narrations: parsed.narrations.map((narration) => narration.trim()).filter(Boolean),
+		illustrationPrompt: parsed.illustrationPrompt.trim(),
 	};
 }
 

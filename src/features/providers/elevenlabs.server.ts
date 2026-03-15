@@ -41,7 +41,7 @@ export async function generateStoryAudio(content: string) {
 	try {
 		const audioStream = await getClient().textToSpeech.convert(voiceId, {
 			text: content,
-			modelId: "eleven_multilingual_v2",
+			modelId: "eleven_turbo_v2_5",
 			outputFormat: "mp3_44100_128",
 		});
 

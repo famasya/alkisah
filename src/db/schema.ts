@@ -5,6 +5,7 @@ export type StoryPartRecord = {
 	narrations: string[];
 	characterGuide?: string;
 	illustrationPrompt: string;
+	regenerationAttempts?: number;
 	illustrationStatus?: "queued" | "generating" | "generated" | "failed";
 	illustrationFailureReason?: string;
 	illustrationKey?: string;

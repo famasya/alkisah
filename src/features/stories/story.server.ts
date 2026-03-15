@@ -8,6 +8,7 @@ import { createStorySlug } from "~/lib/slug";
 import { now, startOfUtcDay, toIsoDate } from "~/lib/time";
 import { createSignedMediaUrl } from "../media/asset-token.server";
 import { uploadBinaryObject } from "../media/storage.server";
+import { createMayarPaymentLink, fetchMayarPaymentDetail } from "../providers/mayar.server";
 import type {
 	CreateStoryInput,
 	LibraryQueryInput,
@@ -25,7 +26,7 @@ import type {
 
 const DAILY_FREE_LIMIT = 3;
 const PAGE_SIZE = 9;
-const STORY_PRICE_IDR = 5000;
+const STORY_PRICE_IDR = 7000;
 const appUrl = env.APP_URL || "http://localhost:3000";
 
 function trimPreview(content: string) {
@@ -65,6 +66,67 @@ function buildStoryContent(parts: Array<{ narrations: string[] }>) {
 		.flatMap((part) => part.narrations)
 		.filter(Boolean)
 		.join(" ");
+}
+
+function normalizePart(part: StoryPartRecord) {
+	return {
+		...part,
+		regenerationAttempts: part.regenerationAttempts ?? 0,
+	};
+}
+
+function preparePremiumParts(parts: StoryPartRecord[]): StoryPartRecord[] {
+	return parts.map((part) => ({
+		...normalizePart(part),
+		voiceStatus: part.voiceKey ? ("generated" as const) : ("queued" as const),
+		voiceFailureReason: undefined,
+	}));
+}
+
+async function recordPendingMayarPayment(input: {
+	storyId: string;
+	userId: string;
+	paymentId: string;
+	transactionId?: string;
+	paymentLink: string;
+	customerName: string;
+	customerEmail: string;
+	customerMobile: string;
+	rawPayload: Record<string, unknown>;
+}) {
+	const current = now();
+	await getDb()
+		.insert(schema.storyPayments)
+		.values({
+			id: nanoid(16),
+			storyId: input.storyId,
+			clerkUserId: input.userId,
+			provider: "mayar",
+			status: "pending",
+			amount: STORY_PRICE_IDR,
+			currency: "IDR",
+			customerName: input.customerName,
+			customerEmail: input.customerEmail,
+			customerMobile: input.customerMobile,
+			mayarPaymentId: input.paymentId,
+			mayarTransactionId: input.transactionId,
+			paymentLink: input.paymentLink,
+			rawPayload: input.rawPayload,
+			createdAt: current,
+			updatedAt: current,
+		});
+
+	return current;
+}
+
+async function findLatestPendingPayment(storyId: string) {
+	return getDb().query.storyPayments.findFirst({
+		where: and(
+			eq(schema.storyPayments.storyId, storyId),
+			eq(schema.storyPayments.status, "pending"),
+		),
+		orderBy: [desc(schema.storyPayments.createdAt)],
+	});
 }
 
 async function requireUserId() {
@@ -151,6 +213,7 @@ async function ensureProfile(
 }
 
 async function serializeStory(row: typeof schema.stories.$inferSelect): Promise<StoryDetail> {
+	const pendingPayment = row.isPaid ? null : await findLatestPendingPayment(row.id);
 	const coverImageUrl = row.coverImageKey
 		? await createSignedMediaUrl({
 				storyId: row.id,
@@ -163,6 +226,7 @@ async function serializeStory(row: typeof schema.stories.$inferSelect): Promise<
 		row.parts.map(async (part, index) => ({
 			order: part.order,
 			narrations: part.narrations,
+			regenerationAttempts: part.regenerationAttempts ?? 0,
 			illustrationStatus:
 				part.illustrationStatus ?? (part.illustrationKey ? "generated" : "queued"),
 			illustrationFailureReason: part.illustrationFailureReason,
@@ -204,6 +268,7 @@ async function serializeStory(row: typeof schema.stories.$inferSelect): Promise<
 		paidAt: row.paidAt ? toIsoDate(row.paidAt) : null,
 		previewExcerpt: row.previewExcerpt,
 		coverImageUrl,
+		pendingPaymentLink: pendingPayment?.paymentLink ?? null,
 		parts,
 		canListenToPaidAudio: row.isPaid,
 		failureReason: row.failureReason,
@@ -281,13 +346,63 @@ export async function getViewer() {
 	};
 }
 
+function buildGenerationInputFromStory(
+	story: typeof schema.stories.$inferSelect,
+): CreateStoryInput {
+	return {
+		childName: story.childName,
+		age: story.age,
+		theme: story.theme,
+		customTheme: story.customTheme ?? undefined,
+		mode: story.isPaid ? "paid" : "free",
+		customerEmail: undefined,
+		customerMobile: undefined,
+		customerName: undefined,
+	};
+}
+
+async function generateAndPersistStoryDraft(input: {
+	story: typeof schema.stories.$inferSelect;
+	isPaid: boolean;
+}) {
+	const db = getDb();
+	const { generateStoryDraft } = await import("../providers/openrouter.server");
+	const generated = await generateStoryDraft(buildGenerationInputFromStory(input.story));
+	const parts: StoryPartRecord[] = generated.parts.map((part, index) => ({
+		order: generated.parts[index]?.order ?? index + 1,
+		narrations: generated.parts[index]?.narrations ?? [],
+		characterGuide: generated.characterGuide,
+		illustrationPrompt: generated.parts[index]?.illustrationPrompt ?? "",
+		regenerationAttempts: 0,
+		illustrationStatus: "queued",
+		voiceStatus: "queued",
+	}));
+	const fullContent = buildStoryContent(parts);
+	const nextParts = input.isPaid ? preparePremiumParts(parts) : parts;
+
+	await db
+		.update(schema.stories)
+		.set({
+			title: generated.title,
+			content: fullContent,
+			parts: nextParts,
+			coverImageKey: null,
+			previewExcerpt: trimPreview(fullContent),
+			status: input.isPaid ? "paid" : "generated",
+			failureReason: null,
+			updatedAt: now(),
+		})
+		.where(eq(schema.stories.id, input.story.id));
+}
+
 export async function createStory(input: CreateStoryInput) {
 	const userId = await requireUserId();
 	const profile = await ensureProfile(userId);
+	const isPaidCreate = input.mode === "paid";
 
-	if (profile.dailyGenerates >= DAILY_FREE_LIMIT) {
+	if (!isPaidCreate && profile.dailyGenerates >= DAILY_FREE_LIMIT) {
 		throw new Error(
-			"Kuota gratis hari ini sudah habis. Buka cerita berikutnya dengan pembayaran Rp5.000.",
+			"Kuota gratis hari ini sudah habis. Cerita berikutnya harus dibuat lewat pembayaran Rp7.000 di depan.",
 		);
 	}
 
@@ -295,24 +410,34 @@ export async function createStory(input: CreateStoryInput) {
 	const createdAt = now();
 	const storyId = nanoid(16);
 
-	await db
-		.update(schema.profiles)
-		.set({
-			dailyGenerates: profile.dailyGenerates + 1,
-			updatedAt: createdAt,
-		})
-		.where(eq(schema.profiles.clerkUserId, userId));
+	if (isPaidCreate) {
+		await ensureProfile(userId, {
+			email: input.customerEmail,
+			fullName: input.customerName,
+			phone: input.customerMobile,
+		});
+	} else {
+		await db
+			.update(schema.profiles)
+			.set({
+				dailyGenerates: profile.dailyGenerates + 1,
+				updatedAt: createdAt,
+			})
+			.where(eq(schema.profiles.clerkUserId, userId));
+	}
 
+	const initialTitle = isPaidCreate ? "Menunggu pembayaran..." : "Sedang menulis cerita...";
+	const initialStatus = isPaidCreate ? "payment_pending" : "generating";
 	await db.insert(schema.stories).values({
 		id: storyId,
 		clerkUserId: userId,
 		childName: input.childName,
-		title: "Sedang menulis cerita...",
+		title: initialTitle,
 		content: "",
 		theme: input.theme,
 		customTheme: input.customTheme,
 		age: input.age,
-		status: "generating",
+		status: initialStatus,
 		parts: [],
 		previewExcerpt: "",
 		isPaid: false,
@@ -322,32 +447,47 @@ export async function createStory(input: CreateStoryInput) {
 		updatedAt: createdAt,
 	});
 
+	if (isPaidCreate) {
+		try {
+			const payment = await createMayarPaymentLink({
+				name: input.customerName!,
+				email: input.customerEmail!,
+				mobile: input.customerMobile!,
+				amount: STORY_PRICE_IDR,
+				description: `Buat Cerita Premium: ${input.childName}`,
+				redirectUrl: `${appUrl}/stories/${storyId}?payment=success`,
+			});
+			await recordPendingMayarPayment({
+				storyId,
+				userId,
+				paymentId: payment.id,
+				transactionId: payment.transactionId,
+				paymentLink: payment.paymentLink,
+				customerName: input.customerName!,
+				customerEmail: input.customerEmail!,
+				customerMobile: input.customerMobile!,
+				rawPayload: { mode: "paid_create" },
+			});
+
+			return {
+				storyId,
+				paymentLink: payment.paymentLink,
+			};
+		} catch (error) {
+			await db.delete(schema.stories).where(eq(schema.stories.id, storyId));
+			throw error;
+		}
+	}
+
 	try {
-		const { generateStoryDraft } = await import("../providers/openrouter.server");
-		const generated = await generateStoryDraft(input);
-		const parts: StoryPartRecord[] = generated.parts.map((part, index) => ({
-			order: generated.parts[index]?.order ?? index + 1,
-			narrations: generated.parts[index]?.narrations ?? [],
-			characterGuide: generated.characterGuide,
-			illustrationPrompt: generated.parts[index]?.illustrationPrompt ?? "",
-			illustrationStatus: "queued",
-			voiceStatus: "queued",
-		}));
-
-		const fullContent = buildStoryContent(parts);
-
-		await db
-			.update(schema.stories)
-			.set({
-				title: generated.title,
-				content: fullContent,
-				parts,
-				coverImageKey: null,
-				previewExcerpt: trimPreview(fullContent),
-				status: "generated",
-				updatedAt: now(),
-			})
-			.where(eq(schema.stories.id, storyId));
+		const story = await getOwnedStoryRow(storyId, userId);
+		if (!story) {
+			throw new Error("Cerita tidak ditemukan.");
+		}
+		await generateAndPersistStoryDraft({
+			story,
+			isPaid: false,
+		});
 	} catch (error) {
 		await db
 			.update(schema.stories)
@@ -468,23 +608,21 @@ function getNextQueuedIllustrationIndex(parts: StoryPartRecord[]) {
 	);
 }
 
-export async function processStoryIllustrations(storyId: string) {
-	const userId = await requireUserId();
+async function processStoryIllustrationIndex(input: {
+	story: typeof schema.stories.$inferSelect;
+	userId: string;
+	illustrationIndex: number;
+}) {
 	const db = getDb();
-	const story = await getOwnedStoryRow(storyId, userId);
+	const parts = [...input.story.parts];
+	const currentPart = parts[input.illustrationIndex];
 
-	if (!story) {
-		throw new Error("Cerita tidak ditemukan.");
+	if (!currentPart) {
+		throw new Error("Bagian ilustrasi tidak ditemukan.");
 	}
 
-	const illustrationIndex = getNextQueuedIllustrationIndex(story.parts);
-	if (illustrationIndex < 0) {
-		return await serializeStory(story);
-	}
-
-	const parts = [...story.parts];
-	parts[illustrationIndex] = {
-		...parts[illustrationIndex]!,
+	parts[input.illustrationIndex] = {
+		...normalizePart(currentPart),
 		illustrationStatus: "generating",
 		illustrationFailureReason: undefined,
 	};
@@ -494,13 +632,13 @@ export async function processStoryIllustrations(storyId: string) {
 			parts,
 			updatedAt: now(),
 		})
-		.where(eq(schema.stories.id, story.id));
+		.where(eq(schema.stories.id, input.story.id));
 
 	try {
 		const { generateIllustration } = await import("../providers/openrouter.server");
 		const imageSource = await generateIllustration(
-			parts[illustrationIndex]?.illustrationPrompt ?? "",
-			parts[illustrationIndex]?.characterGuide,
+			parts[input.illustrationIndex]?.illustrationPrompt ?? "",
+			parts[input.illustrationIndex]?.characterGuide,
 		);
 		const { buffer, contentType } = await resolveGeneratedImage(imageSource);
 		const extension = contentType.includes("png")
@@ -508,17 +646,17 @@ export async function processStoryIllustrations(storyId: string) {
 			: contentType.includes("webp")
 				? "webp"
 				: "jpg";
-		const key = `stories/${story.id}/images/${illustrationIndex}.${extension}`;
+		const key = `stories/${input.story.id}/images/${input.illustrationIndex}.${extension}`;
 		await uploadBinaryObject(key, buffer, contentType);
-		parts[illustrationIndex] = {
-			...parts[illustrationIndex]!,
+		parts[input.illustrationIndex] = {
+			...parts[input.illustrationIndex]!,
 			illustrationKey: key,
 			illustrationStatus: "generated",
 			illustrationFailureReason: undefined,
 		};
 	} catch (error) {
-		parts[illustrationIndex] = {
-			...parts[illustrationIndex]!,
+		parts[input.illustrationIndex] = {
+			...parts[input.illustrationIndex]!,
 			illustrationStatus: "failed",
 			illustrationFailureReason:
 				error instanceof Error ? error.message : "Unknown illustration error",
@@ -530,9 +668,71 @@ export async function processStoryIllustrations(storyId: string) {
 		.set({
 			parts,
 			coverImageKey:
-				illustrationIndex === 0
-					? (parts[illustrationIndex]?.illustrationKey ?? null)
-					: story.coverImageKey,
+				input.illustrationIndex === 0
+					? (parts[input.illustrationIndex]?.illustrationKey ?? null)
+					: input.story.coverImageKey,
+			updatedAt: now(),
+		})
+		.where(eq(schema.stories.id, input.story.id));
+
+	const refreshed = await getOwnedStoryRow(input.story.id, input.userId);
+	if (!refreshed) {
+		throw new Error("Cerita tidak ditemukan.");
+	}
+
+	return await serializeStory(refreshed);
+}
+
+export async function processStoryIllustrations(storyId: string) {
+	const userId = await requireUserId();
+	const story = await getOwnedStoryRow(storyId, userId);
+
+	if (!story) {
+		throw new Error("Cerita tidak ditemukan.");
+	}
+
+	const illustrationIndex = getNextQueuedIllustrationIndex(story.parts);
+	if (illustrationIndex < 0) {
+		return await serializeStory(story);
+	}
+
+	return await processStoryIllustrationIndex({
+		story,
+		userId,
+		illustrationIndex,
+	});
+}
+
+export async function retryStoryPartIllustration(storyId: string, index: number) {
+	const userId = await requireUserId();
+	const db = getDb();
+	const story = await getOwnedStoryRow(storyId, userId);
+
+	if (!story) {
+		throw new Error("Cerita tidak ditemukan.");
+	}
+
+	const part = story.parts[index];
+	if (!part) {
+		throw new Error("Bagian cerita tidak ditemukan.");
+	}
+
+	if (part.illustrationStatus !== "failed") {
+		throw new Error("Ilustrasi bagian ini belum gagal, jadi belum perlu dicoba lagi.");
+	}
+
+	const parts = [...story.parts];
+	parts[index] = {
+		...normalizePart(part),
+		illustrationStatus: "queued",
+		illustrationFailureReason: undefined,
+		illustrationKey: undefined,
+	};
+	await db
+		.update(schema.stories)
+		.set({
+			parts,
+			coverImageKey: index === 0 ? null : story.coverImageKey,
 			updatedAt: now(),
 		})
 		.where(eq(schema.stories.id, story.id));
@@ -542,7 +742,11 @@ export async function processStoryIllustrations(storyId: string) {
 		throw new Error("Cerita tidak ditemukan.");
 	}
 
-	return await serializeStory(refreshed);
+	return await processStoryIllustrationIndex({
+		story: refreshed,
+		userId,
+		illustrationIndex: index,
+	});
 }
 
 export async function createPaymentLinkForStory(input: PaymentRequestInput) {
@@ -562,33 +766,16 @@ export async function createPaymentLinkForStory(input: PaymentRequestInput) {
 		throw new Error("Cerita belum siap untuk dibayar.");
 	}
 
+	const pendingPayment = await findLatestPendingPayment(story.id);
+	if (pendingPayment?.paymentLink) {
+		return { paymentLink: pendingPayment.paymentLink };
+	}
+
 	await ensureProfile(userId, {
 		email: input.customerEmail,
 		fullName: input.customerName,
 		phone: input.customerMobile,
 	});
-
-	const current = now();
-	await db.insert(schema.storyPayments).values({
-		id: nanoid(16),
-		storyId: story.id,
-		clerkUserId: userId,
-		provider: "manual",
-		status: "paid",
-		amount: STORY_PRICE_IDR,
-		currency: "IDR",
-		customerName: input.customerName,
-		customerEmail: input.customerEmail,
-		customerMobile: input.customerMobile,
-		rawPayload: { mode: "manual_unlock_bypass" },
-		createdAt: current,
-		updatedAt: current,
-		paidAt: current,
-	});
-
-	/*
-	Mayar integration is intentionally disabled for now.
-	Restore the live gateway flow here when needed:
 
 	const payment = await createMayarPaymentLink({
 		name: input.customerName,
@@ -598,15 +785,18 @@ export async function createPaymentLinkForStory(input: PaymentRequestInput) {
 		description: `Unlock Cerita Anak: ${story.title}`,
 		redirectUrl: `${appUrl}/stories/${story.id}?payment=success`,
 	});
-
-	await db.insert(schema.storyPayments).values({
-		...,
-		status: "pending",
-		mayarPaymentId: payment.id,
-		mayarTransactionId: payment.transactionId,
+	await recordPendingMayarPayment({
+		storyId: story.id,
+		userId,
+		paymentId: payment.id,
+		transactionId: payment.transactionId,
 		paymentLink: payment.paymentLink,
+		customerName: input.customerName,
+		customerEmail: input.customerEmail,
+		customerMobile: input.customerMobile,
+		rawPayload: { mode: "unlock_existing_story" },
 	});
-
+	const current = now();
 	await db
 		.update(schema.stories)
 		.set({
@@ -616,27 +806,203 @@ export async function createPaymentLinkForStory(input: PaymentRequestInput) {
 		.where(eq(schema.stories.id, story.id));
 
 	return { paymentLink: payment.paymentLink };
-	*/
+}
+
+function extractMayarEvent(payload: Record<string, unknown>) {
+	const nestedEvent = payload.event;
+	if (typeof nestedEvent === "object" && nestedEvent && "received" in nestedEvent) {
+		const received = nestedEvent.received;
+		return typeof received === "string" ? received : undefined;
+	}
+
+	const flatEvent = payload["event.received"];
+	return typeof flatEvent === "string" ? flatEvent : undefined;
+}
+
+function extractMayarPaymentId(payload: Record<string, unknown>) {
+	const data = payload.data;
+	if (typeof data === "object" && data) {
+		if ("id" in data && typeof data.id === "string") {
+			return data.id;
+		}
+
+		if ("requestId" in data && typeof data.requestId === "string") {
+			return data.requestId;
+		}
+	}
+
+	return undefined;
+}
+
+async function markPaymentPaid(
+	payment: typeof schema.storyPayments.$inferSelect,
+	rawPayload: Record<string, unknown>,
+) {
+	if (!payment.mayarPaymentId) {
+		throw new Error("Missing Mayar payment id.");
+	}
+
+	const detail = await fetchMayarPaymentDetail(payment.mayarPaymentId);
+
+	if (detail.status?.toLowerCase() !== "paid") {
+		return { detail, paymentAlreadySettled: false };
+	}
+
+	if (detail.amount !== STORY_PRICE_IDR) {
+		throw new Error(
+			`Mayar payment amount mismatch: expected ${STORY_PRICE_IDR}, got ${detail.amount}`,
+		);
+	}
+
+	if (payment.status !== "paid") {
+		const paidAt = now();
+		await getDb()
+			.update(schema.storyPayments)
+			.set({
+				status: "paid",
+				mayarTransactionId: detail.transactionId ?? payment.mayarTransactionId,
+				rawPayload,
+				paidAt,
+				updatedAt: paidAt,
+			})
+			.where(eq(schema.storyPayments.id, payment.id));
+	}
+
+	return {
+		detail,
+		paymentAlreadySettled: payment.status === "paid",
+	};
+}
+
+async function settlePaidStory(storyId: string) {
+	const db = getDb();
+	const story = await db.query.stories.findFirst({
+		where: eq(schema.stories.id, storyId),
+	});
+	if (!story) {
+		return;
+	}
+
+	if (story.isPaid || story.status === "generating") {
+		return;
+	}
 
 	const paidAt = now();
+	if (story.parts.length > 0) {
+		await db
+			.update(schema.stories)
+			.set({
+				parts: preparePremiumParts(story.parts),
+				isPaid: true,
+				status: "paid",
+				paidAt,
+				updatedAt: paidAt,
+			})
+			.where(eq(schema.stories.id, story.id));
+		return;
+	}
+
 	await db
 		.update(schema.stories)
 		.set({
-			parts: story.parts.map((part) => ({
-				...part,
-				voiceStatus: part.voiceKey ? "generated" : "queued",
-				voiceFailureReason: undefined,
-			})),
 			isPaid: true,
-			status: "paid",
+			status: "generating",
 			paidAt,
+			title: "Sedang menulis cerita premium...",
+			failureReason: null,
 			updatedAt: paidAt,
 		})
 		.where(eq(schema.stories.id, story.id));
 
-	return {
-		paymentLink: `${appUrl}/stories/${story.id}?payment=success`,
-	};
+	const generatingStory = await db.query.stories.findFirst({
+		where: eq(schema.stories.id, story.id),
+	});
+	if (!generatingStory) {
+		return;
+	}
+
+	try {
+		await generateAndPersistStoryDraft({
+			story: {
+				...generatingStory,
+				isPaid: true,
+			},
+			isPaid: true,
+		});
+	} catch (error) {
+		await db
+			.update(schema.stories)
+			.set({
+				status: "failed",
+				failureReason: error instanceof Error ? error.message : "Unknown generation error",
+				updatedAt: now(),
+			})
+			.where(eq(schema.stories.id, story.id));
+	}
+}
+
+export async function confirmStoryPaymentFromRedirect(storyId: string) {
+	const userId = await requireUserId();
+	const story = await getOwnedStoryRow(storyId, userId);
+
+	if (!story) {
+		throw new Error("Cerita tidak ditemukan.");
+	}
+
+	if (story.isPaid) {
+		return await serializeStory(story);
+	}
+
+	const pendingPayment = await findLatestPendingPayment(story.id);
+	if (!pendingPayment) {
+		throw new Error("Pembayaran pending untuk cerita ini tidak ditemukan.");
+	}
+
+	const { detail } = await markPaymentPaid(pendingPayment, {
+		mode: "redirect_confirmation",
+		storyId: story.id,
+	});
+
+	if (detail.status?.toLowerCase() !== "paid") {
+		throw new Error("Pembayaran Mayar belum terkonfirmasi.");
+	}
+
+	await settlePaidStory(story.id);
+
+	const refreshed = await getOwnedStoryRow(story.id, userId);
+	if (!refreshed) {
+		throw new Error("Cerita tidak ditemukan.");
+	}
+
+	return await serializeStory(refreshed);
+}
+
+export async function handleMayarWebhook(payload: Record<string, unknown>) {
+	const eventName = extractMayarEvent(payload);
+	if (eventName !== "payment.received") {
+		return { ok: true, ignored: true };
+	}
+
+	const paymentId = extractMayarPaymentId(payload);
+	if (!paymentId) {
+		return { ok: true, ignored: true };
+	}
+
+	const payment = await getDb().query.storyPayments.findFirst({
+		where: eq(schema.storyPayments.mayarPaymentId, paymentId),
+	});
+	if (!payment) {
+		return { ok: true, ignored: true };
+	}
+
+	const { detail } = await markPaymentPaid(payment, payload);
+	if (detail.status?.toLowerCase() !== "paid") {
+		return { ok: true, ignored: true };
+	}
+
+	await settlePaidStory(payment.storyId);
+
+	return { ok: true };
 }
 
 async function findUniqueSlug(title: string, storyId: string) {
@@ -756,10 +1122,100 @@ export async function generateStoryPartAudio(storyId: string, index: number) {
 	return await serializeStory(refreshed);
 }
 
-/*
-Mayar webhook handling is disabled for now.
-Re-enable it together with the provider adapter and `/api/mayar/webhook` route when the payment flow is restored.
-*/
+export async function regenerateStoryPart(storyId: string, index: number, prompt: string) {
+	const userId = await requireUserId();
+	const db = getDb();
+	const story = await getOwnedStoryRow(storyId, userId);
+
+	if (!story) {
+		throw new Error("Cerita tidak ditemukan.");
+	}
+
+	if (story.status !== "generated" && story.status !== "paid") {
+		throw new Error("Bagian cerita baru bisa diubah setelah cerita selesai dibuat.");
+	}
+
+	const part = story.parts[index];
+	if (!part) {
+		throw new Error("Bagian cerita tidak ditemukan.");
+	}
+
+	if (part.voiceStatus === "generated" || part.voiceKey) {
+		throw new Error("Bagian yang sudah punya audio tidak bisa diregenerate lagi.");
+	}
+
+	const attempts = part.regenerationAttempts ?? 0;
+	if (attempts >= 3) {
+		throw new Error("Batas regenerate untuk bagian ini sudah habis.");
+	}
+
+	try {
+		const { regenerateStorySection } = await import("../providers/openrouter.server");
+		const regenerated = await regenerateStorySection({
+			childName: story.childName,
+			age: story.age,
+			theme: story.theme,
+			customTheme: story.customTheme,
+			title: story.title,
+			characterGuide: part.characterGuide,
+			currentSectionOrder: part.order,
+			currentNarrations: part.narrations,
+			allSections: story.parts.map((section) => ({
+				order: section.order,
+				narrations: section.narrations,
+			})),
+			prompt,
+		});
+
+		const parts = [...story.parts];
+		parts[index] = {
+			...normalizePart(part),
+			narrations: regenerated.narrations,
+			illustrationPrompt: regenerated.illustrationPrompt,
+			regenerationAttempts: attempts + 1,
+			illustrationKey: undefined,
+			illustrationStatus: "queued",
+			illustrationFailureReason: undefined,
+			voiceKey: undefined,
+			voiceStatus: "queued",
+			voiceFailureReason: undefined,
+		};
+		const fullContent = buildStoryContent(parts);
+
+		await db
+			.update(schema.stories)
+			.set({
+				content: fullContent,
+				previewExcerpt: trimPreview(fullContent),
+				parts,
+				coverImageKey: index === 0 ? null : story.coverImageKey,
+				updatedAt: now(),
+			})
+			.where(eq(schema.stories.id, story.id));
+	} catch (error) {
+		const parts = [...story.parts];
+		parts[index] = {
+			...normalizePart(part),
+			regenerationAttempts: attempts + 1,
+		};
+		await db
+			.update(schema.stories)
+			.set({
+				parts,
+				updatedAt: now(),
+			})
+			.where(eq(schema.stories.id, story.id));
+
+		throw error;
+	}
+
+	const refreshed = await getOwnedStoryRow(story.id, userId);
+	if (!refreshed) {
+		throw new Error("Cerita tidak ditemukan.");
+	}
+
+	return await serializeStory(refreshed);
+}
 
 async function assertStoryCanBeRead(storyId: string) {
 	const story = await getDb().query.stories.findFirst({

@@ -12,7 +12,7 @@ const featureCards = [
 	},
 	{
 		title: "Gratis! dengan opsi premium untuk audio premium",
-		body: "Tersedia 3 cerita gratis per hari dengan opsi premium untuk audio narasi yang lebih natural.",
+		body: "Tersedia 3 cerita gratis per hari. Setelah habis, cerita baru tetap bisa dibuat lewat pembayaran Rp7.000 di depan via Mayar dan langsung menjadi premium.",
 		icon: LockKeyhole,
 	},
 	{
@@ -49,8 +49,8 @@ function LandingPage() {
 						</p>
 						<p className="max-w-2xl text-lg leading-8 text-slate-600">
 							Tulis nama anak, pilih usia dan tema, lalu Alkisah menyusun cerita terstruktur dengan
-							jumlah bagian yang fleksibel, ilustrasi storybook per bagian, dan audio premium yang
-							bisa kamu akses saat kamu siap membayarnya.
+							jumlah bagian yang dinamis sesuai dengan usia anak, ilustrasi storybook per bagian,
+							dan audio premium yang bisa kamu akses saat kamu siap membayarnya.
 						</p>
 					</div>
 					<div className="flex flex-wrap items-center gap-4">
@@ -82,7 +82,7 @@ function LandingPage() {
 						</div>
 						<div className="rounded-[26px] border border-white/70 bg-white/80 p-5 shadow-[0_22px_60px_rgba(15,23,42,0.07)]">
 							<p className="text-sm font-medium text-slate-500">Unlock premium</p>
-							<p className="mt-3 font-heading text-4xl">Rp5K</p>
+							<p className="mt-3 font-heading text-4xl">Rp7K</p>
 						</div>
 						<div className="rounded-[26px] border border-white/70 bg-white/80 p-5 shadow-[0_22px_60px_rgba(15,23,42,0.07)]">
 							<p className="text-sm font-medium text-slate-500">Format cerita</p>

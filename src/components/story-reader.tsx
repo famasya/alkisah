@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useState } from "react";
-import { MoonStar, PauseCircle, PlayCircle, Volume2 } from "lucide-react";
+import { BookOpenText, MoonStar, PauseCircle, PlayCircle, Volume2 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import type { StoryDetail } from "~/features/stories/story.types";
 
@@ -7,18 +7,34 @@ type StoryReaderProps = {
 	story: StoryDetail;
 	isPublic?: boolean;
 	audioGenerationIndex?: number | null;
+	imageRetryIndex?: number | null;
 	nightMode?: boolean;
+	readingMode?: boolean;
+	regenerationIndex?: number | null;
+	regenerationPrompts?: Record<number, string>;
 	onGenerateAudio?: (index: number) => void;
+	onRegeneratePart?: (index: number) => void;
+	onRegenerationPromptChange?: (index: number, prompt: string) => void;
+	onRetryIllustration?: (index: number) => void;
 	onToggleNightMode?: () => void;
+	onToggleReadingMode?: () => void;
 };
 
 export function StoryReader({
 	story,
 	isPublic = false,
 	audioGenerationIndex = null,
+	imageRetryIndex = null,
 	nightMode = false,
+	readingMode = false,
+	regenerationIndex = null,
+	regenerationPrompts = {},
 	onGenerateAudio,
+	onRegeneratePart,
+	onRegenerationPromptChange,
+	onRetryIllustration,
 	onToggleNightMode,
+	onToggleReadingMode,
 }: StoryReaderProps) {
 	const [speakingOrder, setSpeakingOrder] = useState<number | null>(null);
 
@@ -69,18 +85,34 @@ export function StoryReader({
 					</p>
 					<p className="font-heading text-3xl">{story.title}</p>
 				</div>
-				<Button
-					type="button"
-					variant={nightMode ? "secondary" : "outline"}
-					className="rounded-full"
-					onClick={() => {
-						stopPreview();
-						onToggleNightMode?.();
-					}}
-				>
-					<MoonStar className="size-4" />
-					Baca Malam
-				</Button>
+				<div className="flex flex-wrap items-center gap-3">
+					{!isPublic ? (
+						<Button
+							type="button"
+							variant={readingMode ? "secondary" : "outline"}
+							className="rounded-full"
+							onClick={() => {
+								stopPreview();
+								onToggleReadingMode?.();
+							}}
+						>
+							<BookOpenText className="size-4" />
+							{readingMode ? "Keluar dari Mode Baca" : "Mode Baca"}
+						</Button>
+					) : null}
+					<Button
+						type="button"
+						variant={nightMode ? "secondary" : "outline"}
+						className="rounded-full"
+						onClick={() => {
+							stopPreview();
+							onToggleNightMode?.();
+						}}
+					>
+						<MoonStar className="size-4" />
+						Baca Malam
+					</Button>
+				</div>
 			</div>
 
 			<div className="space-y-6">
@@ -88,6 +120,19 @@ export function StoryReader({
 					const canUsePaidAudio = story.canListenToPaidAudio && part.voiceUrl;
 					const isSpeaking = speakingOrder === part.order;
 					const isGeneratingAudio = audioGenerationIndex === part.order - 1;
+					const isRetryingIllustration = imageRetryIndex === part.order - 1;
+					const isRegeneratingPart = regenerationIndex === part.order - 1;
+					const regenerationPrompt = regenerationPrompts[part.order - 1] ?? "";
+					const canRegeneratePart =
+						!isPublic &&
+						!readingMode &&
+						Boolean(onRegeneratePart) &&
+						part.voiceStatus !== "generated" &&
+						!part.voiceUrl;
+					const canRetryIllustration = !isPublic && !readingMode && Boolean(onRetryIllustration);
+					const showActionRow = canUsePaidAudio || !readingMode;
+					const hasLockedAudioForRegeneration =
+						part.voiceStatus === "generated" || Boolean(part.voiceUrl);
 
 					return (
 						<article
@@ -125,6 +170,19 @@ export function StoryReader({
 											{part.illustrationFailureReason ? (
 												<p className="text-xs text-rose-600">{part.illustrationFailureReason}</p>
 											) : null}
+											{part.illustrationStatus === "failed" && canRetryIllustration ? (
+												<Button
+													type="button"
+													variant="outline"
+													disabled={isRetryingIllustration}
+													className="mt-2 rounded-full"
+													onClick={() => {
+														onRetryIllustration?.(part.order - 1);
+													}}
+												>
+													{isRetryingIllustration ? "Mencoba lagi..." : "Generate Ulang Ilustrasi"}
+												</Button>
+											) : null}
 										</div>
 									</div>
 								)}
@@ -143,7 +201,74 @@ export function StoryReader({
 										</p>
 									))}
 								</div>
-								<div className="mt-auto flex flex-wrap items-center gap-3">
+								{canRegeneratePart ? (
+									<div
+										className={`rounded-[20px] border p-4 ${
+											nightMode
+												? "border-slate-700 bg-slate-950/60"
+												: "border-slate-200 bg-white/90"
+										}`}
+									>
+										<div className="flex flex-wrap items-center justify-between gap-3">
+											<p
+												className={`text-sm font-semibold ${nightMode ? "text-slate-100" : "text-slate-900"}`}
+											>
+												Regenerate bagian ini
+											</p>
+											<p className={`text-xs ${nightMode ? "text-slate-400" : "text-slate-500"}`}>
+												Percobaan {part.regenerationAttempts} / 3
+											</p>
+										</div>
+										<textarea
+											rows={3}
+											value={regenerationPrompt}
+											onChange={(event) => {
+												onRegenerationPromptChange?.(part.order - 1, event.target.value);
+											}}
+											className={`mt-3 w-full rounded-[18px] border px-4 py-3 text-sm outline-none transition ${
+												nightMode
+													? "border-slate-700 bg-slate-900 text-slate-100 placeholder:text-slate-500"
+													: "border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400"
+											}`}
+											placeholder="Misalnya: buat bagian ini lebih lucu, tambahkan kejutan kecil, dan tetap lembut sebelum tidur."
+										/>
+										<div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+											<p className={`text-xs ${nightMode ? "text-slate-400" : "text-slate-500"}`}>
+												Teks, ilustrasi, dan audio bagian ini akan disesuaikan ulang.
+											</p>
+											<Button
+												type="button"
+												variant="outline"
+												disabled={
+													isRegeneratingPart ||
+													part.regenerationAttempts >= 3 ||
+													regenerationPrompt.trim().length < 5
+												}
+												className="rounded-full"
+												onClick={() => {
+													onRegeneratePart?.(part.order - 1);
+												}}
+											>
+												{isRegeneratingPart ? "Mengubah bagian..." : "Regenerate Bagian"}
+											</Button>
+										</div>
+									</div>
+								) : !isPublic && !readingMode && hasLockedAudioForRegeneration ? (
+									<div
+										className={`rounded-[20px] border p-4 ${
+											nightMode
+												? "border-slate-700 bg-slate-950/60"
+												: "border-slate-200 bg-white/90"
+										}`}
+									>
+										<p className={`text-sm ${nightMode ? "text-slate-300" : "text-slate-600"}`}>
+											Bagian ini sudah punya audio, jadi teksnya tidak bisa diregenerate lagi.
+										</p>
+									</div>
+								) : null}
+								<div
+									className={`mt-auto flex flex-wrap items-center gap-3 ${showActionRow ? "" : "hidden"}`}
+								>
 									{canUsePaidAudio ? (
 										<audio
 											controls
@@ -177,7 +302,7 @@ export function StoryReader({
 											{isSpeaking ? "Stop Preview" : "Preview Suara"}
 										</Button>
 									)}
-									{canUsePaidAudio && !isPublic ? (
+									{canUsePaidAudio && !isPublic && !readingMode ? (
 										<a
 											href={part.voiceUrl}
 											download
@@ -185,7 +310,7 @@ export function StoryReader({
 										>
 											Unduh audio bagian ini
 										</a>
-									) : canUsePaidAudio ? null : story.isPaid && onGenerateAudio ? (
+									) : canUsePaidAudio ? null : story.isPaid && onGenerateAudio && !readingMode ? (
 										<>
 											<Button
 												type="button"
@@ -206,17 +331,17 @@ export function StoryReader({
 													: "Buat audio premium untuk bagian ini saat diperlukan."}
 											</p>
 										</>
-									) : story.isPaid ? (
+									) : story.isPaid && !readingMode ? (
 										<p className={`text-sm ${nightMode ? "text-slate-400" : "text-slate-500"}`}>
 											{isPublic
 												? "Audio premium untuk bagian ini belum tersedia."
 												: "Audio premium untuk bagian ini belum dibuat."}
 										</p>
-									) : (
+									) : !readingMode ? (
 										<p className={`text-sm ${nightMode ? "text-slate-400" : "text-slate-500"}`}>
-											Audio penuh terbuka setelah pembayaran.
+											Audio premium terbuka setelah pembayaran.
 										</p>
-									)}
+									) : null}
 								</div>
 							</div>
 						</article>

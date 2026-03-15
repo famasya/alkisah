@@ -11,16 +11,36 @@ type CreateMayarPaymentInput = {
 };
 
 type MayarCreatePaymentResponse = {
+	data?: {
+		id?: string;
+		transactionId?: string;
+		transaction_id?: string;
+		link?: string;
+		paymentLink?: string;
+		paymentUrl?: string;
+		url?: string;
+	};
 	id?: string;
 	transactionId?: string;
+	transaction_id?: string;
 	paymentLink?: string;
 	paymentUrl?: string;
 	url?: string;
 };
 
 type MayarPaymentDetailResponse = {
+	data?: {
+		id?: string;
+		transactionId?: string;
+		transaction_id?: string;
+		status?: string;
+		amount?: number;
+		payerEmail?: string;
+		payerPhone?: string;
+	};
 	id?: string;
 	transactionId?: string;
+	transaction_id?: string;
 	status?: string;
 	amount?: number;
 	payerEmail?: string;
@@ -49,6 +69,7 @@ export async function createMayarPaymentLink(input: CreateMayarPaymentInput) {
 			mobile: input.mobile,
 			amount: input.amount,
 			description: input.description,
+			redirectUrl: input.redirectUrl,
 			redirection_url: input.redirectUrl,
 		}),
 	});
@@ -58,21 +79,31 @@ export async function createMayarPaymentLink(input: CreateMayarPaymentInput) {
 	}
 
 	const payload = (await response.json()) as MayarCreatePaymentResponse;
-	const paymentLink = payload.paymentLink ?? payload.paymentUrl ?? payload.url;
+	const data = (payload.data ?? payload) as {
+		id?: string;
+		transactionId?: string;
+		transaction_id?: string;
+		link?: string;
+		paymentLink?: string;
+		paymentUrl?: string;
+		url?: string;
+	};
+	const paymentLink = data.link ?? data.paymentLink ?? data.paymentUrl ?? data.url;
+	const paymentId = data.id;
 
-	if (!payload.id || !paymentLink) {
+	if (!paymentId || !paymentLink) {
 		throw new Error("Mayar create payment response was incomplete");
 	}
 
 	return {
-		id: payload.id,
-		transactionId: payload.transactionId,
+		id: paymentId,
+		transactionId: data.transactionId ?? data.transaction_id,
 		paymentLink,
 	};
 }
 
 export async function fetchMayarPaymentDetail(paymentId: string) {
-	const response = await fetch(`${getBaseUrl()}/payment/${paymentId}`, {
+	const response = await fetch(`${getBaseUrl()}/invoice/${paymentId}`, {
 		headers: getHeaders(),
 	});
 
@@ -80,5 +111,15 @@ export async function fetchMayarPaymentDetail(paymentId: string) {
 		throw new Error(`Failed to fetch Mayar payment detail (${response.status})`);
 	}
 
-	return (await response.json()) as MayarPaymentDetailResponse;
+	const payload = (await response.json()) as MayarPaymentDetailResponse;
+	const data = payload.data ?? payload;
+
+	return {
+		id: data.id,
+		transactionId: data.transactionId ?? data.transaction_id,
+		status: data.status,
+		amount: data.amount,
+		payerEmail: data.payerEmail,
+		payerPhone: data.payerPhone,
+	};
 }

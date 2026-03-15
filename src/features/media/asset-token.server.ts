@@ -1,106 +1,72 @@
+import { env } from "cloudflare:workers";
+import { AwsClient } from "aws4fetch";
 import { getWorkerSecrets } from "~/lib/worker-secrets.server";
 
-type MediaAssetKind = "audio" | "image";
+const MEDIA_URL_TTL_SECONDS = 60 * 60 * 6;
 
-const MEDIA_TOKEN_TTL_MS = 1000 * 60 * 60 * 6;
+let client: AwsClient | undefined;
 
-const encoder = new TextEncoder();
-let signingKeyPromise: Promise<CryptoKey> | undefined;
+function isLocalDevelopment() {
+	return import.meta.env.DEV;
+}
 
-function encodeBase64Url(value: ArrayBuffer | Uint8Array) {
-	const bytes = value instanceof Uint8Array ? value : new Uint8Array(value);
-	let binary = "";
-
-	for (const byte of bytes) {
-		binary += String.fromCharCode(byte);
+function readEnvString(name: string) {
+	const value = (env as unknown as Record<string, unknown>)[name];
+	if (typeof value !== "string" || value.length === 0) {
+		throw new Error(`Missing required environment variable: ${name}`);
 	}
 
-	return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/u, "");
+	return value;
 }
 
-function buildPayload(input: {
-	expiresAt: number;
-	index: number;
-	key: string;
-	kind: MediaAssetKind;
-	storyId: string;
-}) {
-	return [input.storyId, input.kind, input.index, input.key, input.expiresAt].join(":");
+function getBucketName() {
+	return readEnvString("MEDIA_BUCKET_NAME");
 }
 
-async function getSigningKey() {
+function getAccountId() {
+	return readEnvString("R2_ACCOUNT_ID");
+}
+
+function getClient() {
 	const secrets = getWorkerSecrets();
-	signingKeyPromise ??= crypto.subtle.importKey(
-		"raw",
-		encoder.encode(secrets.CLERK_SECRET_KEY),
-		{ name: "HMAC", hash: "SHA-256" },
-		false,
-		["sign"],
-	);
+	client ??= new AwsClient({
+		accessKeyId: secrets.R2_ACCESS_KEY_ID,
+		secretAccessKey: secrets.R2_SECRET_ACCESS_KEY,
+		service: "s3",
+		region: "auto",
+	});
 
-	return signingKeyPromise;
+	return client;
 }
 
-async function signPayload(payload: string) {
-	return encodeBase64Url(
-		await crypto.subtle.sign("HMAC", await getSigningKey(), encoder.encode(payload)),
-	);
+function encodeObjectKey(key: string) {
+	return key
+		.split("/")
+		.map((segment) => encodeURIComponent(segment))
+		.join("/");
 }
 
 export async function createSignedMediaUrl(input: {
 	index: number;
 	key: string;
-	kind: MediaAssetKind;
+	kind: "audio" | "image";
 	storyId: string;
 }) {
-	const expiresAt = Date.now() + MEDIA_TOKEN_TTL_MS;
-	const signature = await signPayload(
-		buildPayload({
-			...input,
-			expiresAt,
-		}),
-	);
+	if (isLocalDevelopment()) {
+		const mediaPath = input.kind === "image" ? "images" : "audio";
+		return `/api/media/stories/${input.storyId}/${mediaPath}/${input.index}`;
+	}
 
-	const mediaPath = input.kind === "image" ? "images" : "audio";
-	const searchParams = new URLSearchParams({
-		exp: `${expiresAt}`,
-		key: input.key,
-		sig: signature,
+	const url = new URL(
+		`https://${getAccountId()}.r2.cloudflarestorage.com/${getBucketName()}/${encodeObjectKey(input.key)}`,
+	);
+	url.searchParams.set("X-Amz-Expires", `${MEDIA_URL_TTL_SECONDS}`);
+	const signedRequest = await getClient().sign(url, {
+		method: "GET",
+		aws: {
+			signQuery: true,
+		},
 	});
 
-	return `/api/media/stories/${input.storyId}/${mediaPath}/${input.index}?${searchParams.toString()}`;
-}
-
-export async function resolveSignedMediaKey(input: {
-	index: number;
-	kind: MediaAssetKind;
-	request: Request;
-	storyId: string;
-}) {
-	const url = new URL(input.request.url);
-	const key = url.searchParams.get("key");
-	const expiresAt = Number(url.searchParams.get("exp"));
-	const signature = url.searchParams.get("sig");
-
-	if (!key || !signature || !Number.isFinite(expiresAt)) {
-		return undefined;
-	}
-
-	if (Date.now() > expiresAt) {
-		throw new Error("Media token expired");
-	}
-
-	const expectedSignature = await signPayload(
-		buildPayload({
-			...input,
-			expiresAt,
-			key,
-		}),
-	);
-
-	if (expectedSignature !== signature) {
-		throw new Error("Invalid media token");
-	}
-
-	return key;
+	return signedRequest.url;
 }

@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import {
+	confirmStoryPaymentFromRedirect,
 	createPaymentLinkForStory,
 	createStory,
 	generateStoryPartAudio,
@@ -9,6 +10,8 @@ import {
 	listPrivateStories,
 	listPublicStories,
 	processStoryIllustrations,
+	regenerateStoryPart,
+	retryStoryPartIllustration,
 	setStoryPublicState,
 } from "./story.server";
 import {
@@ -18,6 +21,9 @@ import {
 	privateLibraryQuerySchema,
 	publicStorySchema,
 	storyPartAudioSchema,
+	storyPartIllustrationSchema,
+	storyPaymentConfirmationSchema,
+	storyPartRegenerationSchema,
 	storyIdSchema,
 	storyPublicSchema,
 } from "./story.schemas";
@@ -36,6 +42,10 @@ export const processStoryIllustrationsFn = createServerFn({ method: "POST" })
 	.inputValidator((value) => storyIdSchema.parse(value))
 	.handler(({ data }) => processStoryIllustrations(data.storyId));
 
+export const retryStoryPartIllustrationFn = createServerFn({ method: "POST" })
+	.inputValidator((value) => storyPartIllustrationSchema.parse(value))
+	.handler(({ data }) => retryStoryPartIllustration(data.storyId, data.index));
+
 export const getPublicStoryFn = createServerFn({ method: "GET" })
 	.inputValidator((value) => publicStorySchema.parse(value))
 	.handler(({ data }) => getPublicStory(data.slug));
@@ -52,6 +62,10 @@ export const createPaymentLinkFn = createServerFn({ method: "POST" })
 	.inputValidator((value) => paymentRequestSchema.parse(value))
 	.handler(({ data }) => createPaymentLinkForStory(data));
 
+export const confirmStoryPaymentFromRedirectFn = createServerFn({ method: "POST" })
+	.inputValidator((value) => storyPaymentConfirmationSchema.parse(value))
+	.handler(({ data }) => confirmStoryPaymentFromRedirect(data.storyId));
+
 export const setStoryPublicStateFn = createServerFn({ method: "POST" })
 	.inputValidator((value) => storyPublicSchema.parse(value))
 	.handler(({ data }) => setStoryPublicState(data));
@@ -59,3 +73,7 @@ export const setStoryPublicStateFn = createServerFn({ method: "POST" })
 export const generateStoryPartAudioFn = createServerFn({ method: "POST" })
 	.inputValidator((value) => storyPartAudioSchema.parse(value))
 	.handler(({ data }) => generateStoryPartAudio(data.storyId, data.index));
+
+export const regenerateStoryPartFn = createServerFn({ method: "POST" })
+	.inputValidator((value) => storyPartRegenerationSchema.parse(value))
+	.handler(({ data }) => regenerateStoryPart(data.storyId, data.index, data.prompt));

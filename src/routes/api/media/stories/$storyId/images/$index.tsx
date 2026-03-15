@@ -1,21 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { resolveSignedMediaKey } from "~/features/media/asset-token.server";
 import { getStoredObject } from "~/features/media/storage.server";
 import { getStoryImageAsset } from "~/features/stories/story.server";
 
 export const Route = createFileRoute("/api/media/stories/$storyId/images/$index")({
 	server: {
 		handlers: {
-			GET: async ({ params, request }) => {
+			GET: async ({ params }) => {
 				try {
 					const index = Number(params.index);
-					const signedKey = await resolveSignedMediaKey({
-						storyId: params.storyId,
-						index,
-						kind: "image",
-						request,
-					});
-					const key = signedKey ?? (await getStoryImageAsset(params.storyId, index)).key;
+					const key = (await getStoryImageAsset(params.storyId, index)).key;
 					const object = await getStoredObject(key);
 
 					if (!object) {

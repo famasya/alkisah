@@ -20,7 +20,7 @@ export const Route = createFileRoute("/create")({
 		meta: seo({
 			title: "Buat Cerita | Alkisah",
 			description:
-				"Isi detail anak dan tema favoritnya untuk membuat cerita berilustrasi dengan jumlah bagian yang fleksibel.",
+				"Isi detail anak dan tema favoritnya untuk membuat cerita berilustrasi dengan jumlah bagian yang dinamis.",
 		}),
 	}),
 	loader: () => getViewerFn(),
@@ -32,36 +32,57 @@ function CreateStoryPage() {
 	const router = useRouter();
 	const createStory = useServerFn(createStoryFn);
 	const [isPending, startTransition] = useTransition();
+	const hasFreeQuota = viewer.dailyFreeRemaining > 0;
 	const [formState, setFormState] = useState({
 		childName: "",
 		age: "5",
 		theme: themeOptions[0],
 		customTheme: "",
+		customerName: "",
+		customerEmail: "",
+		customerMobile: "",
 	});
 
 	return (
 		<div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.9fr_1.1fr]">
 			<section className="space-y-5 rounded-[32px] border border-white/70 bg-white/80 p-7 shadow-[0_28px_90px_rgba(15,23,42,0.08)]">
-				<div className="inline-flex rounded-full bg-orange-100 px-4 py-2 text-sm font-medium text-orange-700">
-					Kuota gratis tersisa hari ini: {viewer.dailyFreeRemaining}
+				<div
+					className={`inline-flex rounded-full px-4 py-2 text-sm font-medium ${
+						hasFreeQuota ? "bg-orange-100 text-orange-700" : "bg-slate-900 text-white"
+					}`}
+				>
+					{hasFreeQuota
+						? `Kuota gratis tersisa hari ini: ${viewer.dailyFreeRemaining}`
+						: "Kuota gratis hari ini sudah habis"}
 				</div>
 				<div className="space-y-3">
 					<p className="font-heading text-4xl text-slate-900">Mulai dari tiga detail sederhana.</p>
 					<p className="text-sm leading-7 text-slate-600">
-						Cerita biasanya dibangun menjadi 3 sampai 8 bagian sesuai ritme yang paling cocok untuk
-						anak, tetapi bisa lebih panjang kalau dibutuhkan agar ending-nya tetap utuh. Setelah itu
-						tiap bagian dibuatkan ilustrasi sendiri supaya lebih enak dibaca bersama.
+						{hasFreeQuota
+							? "Cerita biasanya dibangun menjadi 3 sampai 8 bagian sesuai ritme yang paling cocok untuk anak, tetapi bisa lebih panjang kalau dibutuhkan agar ending-nya tetap utuh. Setelah itu tiap bagian dibuatkan ilustrasi sendiri supaya lebih enak dibaca bersama."
+							: "Kuota gratis harianmu sudah terpakai. Kamu tetap bisa lanjut membuat cerita baru, tetapi pembayaran Rp7.000 dilakukan di depan melalui Mayar dan cerita premium baru akan dibuat setelah pembayaran dikonfirmasi."}
 					</p>
 				</div>
 				<div className="rounded-[26px] bg-slate-900 p-5 text-sm leading-7 text-slate-200">
 					<p className="font-semibold text-white">Yang akan kamu dapatkan</p>
 					<ul className="mt-3 space-y-2">
-						<li>Beberapa bagian cerita berurutan dengan ritme yang fleksibel</li>
+						<li>Cerita yang dinamis sesuai dengan usia anak</li>
 						<li>Ilustrasi pastel storybook untuk tiap bagian</li>
 						<li>Preview suara gratis untuk setiap bagian</li>
-						<li>Audio premium per bagian setelah unlock</li>
+						<li>
+							{hasFreeQuota
+								? "Audio premium per bagian setelah unlock"
+								: "Cerita premium dibuat otomatis setelah pembayaran Mayar berhasil"}
+						</li>
 					</ul>
 				</div>
+				{hasFreeQuota ? null : (
+					<div className="rounded-[26px] border border-slate-900/10 bg-slate-50 px-5 py-4 text-sm leading-7 text-slate-600">
+						Data orang tua dipakai untuk membuat link pembayaran Mayar. Setelah pembayaran sukses,
+						kamu akan dibawa kembali ke halaman cerita dan generasi cerita premium akan berjalan
+						otomatis.
+					</div>
+				)}
 			</section>
 
 			<section className="rounded-[32px] border border-white/70 bg-white/80 p-7 shadow-[0_28px_90px_rgba(15,23,42,0.08)]">
@@ -88,8 +109,17 @@ function CreateStoryPage() {
 										age: Number(formState.age),
 										theme: formState.theme,
 										customTheme: formState.customTheme,
+										mode: hasFreeQuota ? "free" : "paid",
+										customerName: hasFreeQuota ? undefined : formState.customerName,
+										customerEmail: hasFreeQuota ? undefined : formState.customerEmail,
+										customerMobile: hasFreeQuota ? undefined : formState.customerMobile,
 									},
 								});
+
+								if (result.paymentLink) {
+									window.location.assign(result.paymentLink);
+									return;
+								}
 
 								await router.navigate({
 									to: "/stories/$storyId",
@@ -160,13 +190,69 @@ function CreateStoryPage() {
 							placeholder="Misalnya: suka hujan malam, ada kucing putih, nuansanya lembut dan lucu."
 						/>
 					</label>
+					{hasFreeQuota ? null : (
+						<div className="grid gap-5 rounded-[26px] border border-slate-200 bg-slate-50/80 p-5">
+							<div>
+								<p className="font-heading text-2xl text-slate-900">Pembayaran di depan</p>
+								<p className="mt-2 text-sm leading-7 text-slate-600">
+									Cerita tambahan setelah kuota gratis akan dibuat sebagai cerita premium setelah
+									pembayaran Mayar Rp7.000 berhasil.
+								</p>
+							</div>
+							<label className="grid gap-2">
+								<span className="text-sm font-medium text-slate-700">Nama orang tua</span>
+								<input
+									required
+									value={formState.customerName}
+									onChange={(event) => {
+										setFormState((value) => ({ ...value, customerName: event.target.value }));
+									}}
+									className="h-13 rounded-2xl border border-slate-200 bg-white px-4 outline-none transition focus:border-orange-300"
+									placeholder="Nama untuk invoice"
+								/>
+							</label>
+							<div className="grid gap-5 sm:grid-cols-2">
+								<label className="grid gap-2">
+									<span className="text-sm font-medium text-slate-700">Email</span>
+									<input
+										required
+										type="email"
+										value={formState.customerEmail}
+										onChange={(event) => {
+											setFormState((value) => ({ ...value, customerEmail: event.target.value }));
+										}}
+										className="h-13 rounded-2xl border border-slate-200 bg-white px-4 outline-none transition focus:border-orange-300"
+										placeholder="nama@email.com"
+									/>
+								</label>
+								<label className="grid gap-2">
+									<span className="text-sm font-medium text-slate-700">
+										Nomor WhatsApp / mobile
+									</span>
+									<input
+										required
+										value={formState.customerMobile}
+										onChange={(event) => {
+											setFormState((value) => ({ ...value, customerMobile: event.target.value }));
+										}}
+										className="h-13 rounded-2xl border border-slate-200 bg-white px-4 outline-none transition focus:border-orange-300"
+										placeholder="0812xxxxxxxx"
+									/>
+								</label>
+							</div>
+						</div>
+					)}
 					<Button
 						type="submit"
 						size="lg"
 						disabled={isPending}
 						className="h-13 rounded-full bg-slate-900 px-7 text-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
 					>
-						{isPending ? "Menyusun cerita..." : "Generate Cerita"}
+						{isPending
+							? "Menyusun cerita..."
+							: hasFreeQuota
+								? "Generate Cerita Gratis"
+								: "Bayar Rp7.000 & Generate Cerita Premium"}
 					</Button>
 				</form>
 			</section>

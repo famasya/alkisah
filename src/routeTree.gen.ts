@@ -17,6 +17,7 @@ import { Route as CreateRouteImport } from './routes/create'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StoriesStoryIdRouteImport } from './routes/stories.$storyId'
 import { Route as SSlugRouteImport } from './routes/s.$slug'
+import { Route as ApiMayarWebhookRouteImport } from './routes/api/mayar/webhook'
 import { Route as ApiMediaStoriesStoryIdImagesIndexRouteImport } from './routes/api/media/stories/$storyId/images/$index'
 import { Route as ApiMediaStoriesStoryIdAudioIndexRouteImport } from './routes/api/media/stories/$storyId/audio/$index'
 
@@ -60,6 +61,11 @@ const SSlugRoute = SSlugRouteImport.update({
   path: '/s/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMayarWebhookRoute = ApiMayarWebhookRouteImport.update({
+  id: '/api/mayar/webhook',
+  path: '/api/mayar/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMediaStoriesStoryIdImagesIndexRoute =
   ApiMediaStoriesStoryIdImagesIndexRouteImport.update({
     id: '/api/media/stories/$storyId/images/$index',
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/sign-up': typeof SignUpRoute
   '/s/$slug': typeof SSlugRoute
   '/stories/$storyId': typeof StoriesStoryIdRoute
+  '/api/mayar/webhook': typeof ApiMayarWebhookRoute
   '/api/media/stories/$storyId/audio/$index': typeof ApiMediaStoriesStoryIdAudioIndexRoute
   '/api/media/stories/$storyId/images/$index': typeof ApiMediaStoriesStoryIdImagesIndexRoute
 }
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/sign-up': typeof SignUpRoute
   '/s/$slug': typeof SSlugRoute
   '/stories/$storyId': typeof StoriesStoryIdRoute
+  '/api/mayar/webhook': typeof ApiMayarWebhookRoute
   '/api/media/stories/$storyId/audio/$index': typeof ApiMediaStoriesStoryIdAudioIndexRoute
   '/api/media/stories/$storyId/images/$index': typeof ApiMediaStoriesStoryIdImagesIndexRoute
 }
@@ -107,6 +115,7 @@ export interface FileRoutesById {
   '/sign-up': typeof SignUpRoute
   '/s/$slug': typeof SSlugRoute
   '/stories/$storyId': typeof StoriesStoryIdRoute
+  '/api/mayar/webhook': typeof ApiMayarWebhookRoute
   '/api/media/stories/$storyId/audio/$index': typeof ApiMediaStoriesStoryIdAudioIndexRoute
   '/api/media/stories/$storyId/images/$index': typeof ApiMediaStoriesStoryIdImagesIndexRoute
 }
@@ -121,6 +130,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/s/$slug'
     | '/stories/$storyId'
+    | '/api/mayar/webhook'
     | '/api/media/stories/$storyId/audio/$index'
     | '/api/media/stories/$storyId/images/$index'
   fileRoutesByTo: FileRoutesByTo
@@ -133,6 +143,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/s/$slug'
     | '/stories/$storyId'
+    | '/api/mayar/webhook'
     | '/api/media/stories/$storyId/audio/$index'
     | '/api/media/stories/$storyId/images/$index'
   id:
@@ -145,6 +156,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/s/$slug'
     | '/stories/$storyId'
+    | '/api/mayar/webhook'
     | '/api/media/stories/$storyId/audio/$index'
     | '/api/media/stories/$storyId/images/$index'
   fileRoutesById: FileRoutesById
@@ -158,6 +170,7 @@ export interface RootRouteChildren {
   SignUpRoute: typeof SignUpRoute
   SSlugRoute: typeof SSlugRoute
   StoriesStoryIdRoute: typeof StoriesStoryIdRoute
+  ApiMayarWebhookRoute: typeof ApiMayarWebhookRoute
   ApiMediaStoriesStoryIdAudioIndexRoute: typeof ApiMediaStoriesStoryIdAudioIndexRoute
   ApiMediaStoriesStoryIdImagesIndexRoute: typeof ApiMediaStoriesStoryIdImagesIndexRoute
 }
@@ -220,6 +233,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/mayar/webhook': {
+      id: '/api/mayar/webhook'
+      path: '/api/mayar/webhook'
+      fullPath: '/api/mayar/webhook'
+      preLoaderRoute: typeof ApiMayarWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/media/stories/$storyId/images/$index': {
       id: '/api/media/stories/$storyId/images/$index'
       path: '/api/media/stories/$storyId/images/$index'
@@ -246,6 +266,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignUpRoute: SignUpRoute,
   SSlugRoute: SSlugRoute,
   StoriesStoryIdRoute: StoriesStoryIdRoute,
+  ApiMayarWebhookRoute: ApiMayarWebhookRoute,
   ApiMediaStoriesStoryIdAudioIndexRoute: ApiMediaStoriesStoryIdAudioIndexRoute,
   ApiMediaStoriesStoryIdImagesIndexRoute:
     ApiMediaStoriesStoryIdImagesIndexRoute,

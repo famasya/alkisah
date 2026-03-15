@@ -12,6 +12,7 @@ export type StoryStatus = (typeof storyStatuses)[number];
 export type StoryPart = {
 	order: number;
 	narrations: string[];
+	regenerationAttempts: number;
 	illustrationStatus: "queued" | "generating" | "generated" | "failed";
 	illustrationFailureReason?: string;
 	illustrationUrl?: string;
@@ -62,6 +63,7 @@ export type StoryDetail = {
 	paidAt?: string | null;
 	previewExcerpt?: string | null;
 	coverImageUrl?: string;
+	pendingPaymentLink?: string | null;
 	parts: StoryPart[];
 	canListenToPaidAudio: boolean;
 	failureReason?: string | null;

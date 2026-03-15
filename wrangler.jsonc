@@ -33,5 +33,7 @@
 		"OPENROUTER_IMAGE_MODEL": "bytedance-seed/seedream-4.5",
 		"ELEVENLABS_VOICE_ID": "zd0hd2egR1Q6EzSLTzCp",
 		"MAYAR_API_BASE_URL": "https://api.mayar.id/hl/v1",
+		"MEDIA_BUCKET_NAME": "alkisah-media",
+		"R2_ACCOUNT_ID": "da23bceae8b9fb7c9c9e90a54cde3e9e",
 	},
 }
