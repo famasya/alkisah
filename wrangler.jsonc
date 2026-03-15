@@ -4,6 +4,12 @@
 	"compatibility_date": "2025-09-24",
 	"compatibility_flags": ["nodejs_compat"],
 	"main": "@tanstack/react-start/server-entry",
+	"routes": [
+		{
+			"pattern": "alkisah.abidf.com",
+			"custom_domain": true,
+		},
+	],
 	"d1_databases": [
 		{
 			"binding": "DB",
@@ -11,6 +17,9 @@
 			"database_id": "ff99adfe-ea7b-43fc-8121-7f5f77b5b5cf",
 		},
 	],
+	"placement": {
+		"mode": "smart",
+	},
 	"r2_buckets": [
 		{
 			"binding": "MEDIA_BUCKET",
