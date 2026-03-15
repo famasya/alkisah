@@ -27,6 +27,7 @@
 		},
 	],
 	"vars": {
+		"OPENROUTER_API_KEY": "sk-or-v1-xxxxxxxx",
 		"APP_URL": "https://alkisah.abidf.com",
 		"VITE_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsuYWxraXNhaC5hYmlkZi5jb20k",
 		"OPENROUTER_TEXT_MODEL": "x-ai/grok-4.1-fast",

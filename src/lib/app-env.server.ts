@@ -1,21 +1,7 @@
 import { env } from "cloudflare:workers";
 
-export type AppEnv = Env & {
-	DB: D1Database;
-	MEDIA_BUCKET: R2Bucket;
-	APP_URL?: string;
-	CLERK_SECRET_KEY?: string;
-	VITE_CLERK_PUBLISHABLE_KEY?: string;
-	OPENROUTER_API_KEY?: string;
-	OPENROUTER_TEXT_MODEL?: string;
-	OPENROUTER_IMAGE_MODEL?: string;
-	ELEVENLABS_API_KEY?: string;
-	ELEVENLABS_VOICE_ID?: string;
-	MAYAR_API_KEY?: string;
-	MAYAR_API_BASE_URL?: string;
-};
-
-type StringEnvKey =
+type StringEnvKey = keyof Pick<
+	Env,
 	| "APP_URL"
 	| "CLERK_SECRET_KEY"
 	| "VITE_CLERK_PUBLISHABLE_KEY"
@@ -25,14 +11,15 @@ type StringEnvKey =
 	| "ELEVENLABS_API_KEY"
 	| "ELEVENLABS_VOICE_ID"
 	| "MAYAR_API_KEY"
-	| "MAYAR_API_BASE_URL";
+	| "MAYAR_API_BASE_URL"
+>;
 
 export function getAppEnv() {
-	return env as AppEnv;
+	return env;
 }
 
 export function getOptionalEnv(name: StringEnvKey) {
-	const value = (getAppEnv() as unknown as Record<string, unknown>)[name];
+	const value = getAppEnv()[name];
 	return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
