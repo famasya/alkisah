@@ -651,7 +651,7 @@ function StoryDetailPage() {
 									[index]: "",
 								}));
 								toast.success(
-									"Bagian cerita diperbarui. Ilustrasi dan audio bagian ini ikut disesuaikan.",
+									"Bagian cerita diperbarui. Ilustrasi ikut disesuaikan, audio tetap seperti sebelumnya.",
 								);
 							} catch (error) {
 								toast.error(

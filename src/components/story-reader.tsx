@@ -123,16 +123,18 @@ export function StoryReader({
 					const isRetryingIllustration = imageRetryIndex === part.order - 1;
 					const isRegeneratingPart = regenerationIndex === part.order - 1;
 					const regenerationPrompt = regenerationPrompts[part.order - 1] ?? "";
+					const hasAudioGenerationInProgress =
+						isGeneratingAudio || part.voiceStatus === "generating";
+					const hasLockedAudioForRegeneration =
+						part.voiceStatus === "generated" || Boolean(part.voiceUrl);
 					const canRegeneratePart =
 						!isPublic &&
 						!readingMode &&
 						Boolean(onRegeneratePart) &&
-						part.voiceStatus !== "generated" &&
-						!part.voiceUrl;
+						!hasLockedAudioForRegeneration &&
+						!hasAudioGenerationInProgress;
 					const canRetryIllustration = !isPublic && !readingMode && Boolean(onRetryIllustration);
 					const showActionRow = canUsePaidAudio || !readingMode;
-					const hasLockedAudioForRegeneration =
-						part.voiceStatus === "generated" || Boolean(part.voiceUrl);
 
 					return (
 						<article
@@ -234,7 +236,7 @@ export function StoryReader({
 										/>
 										<div className="mt-3 flex flex-wrap items-center justify-between gap-3">
 											<p className={`text-xs ${nightMode ? "text-slate-400" : "text-slate-500"}`}>
-												Teks, ilustrasi, dan audio bagian ini akan disesuaikan ulang.
+												Teks dan ilustrasi bagian ini akan disesuaikan ulang. Audio tidak diubah.
 											</p>
 											<Button
 												type="button"
@@ -263,6 +265,19 @@ export function StoryReader({
 									>
 										<p className={`text-sm ${nightMode ? "text-slate-300" : "text-slate-600"}`}>
 											Bagian ini sudah punya audio, jadi teksnya tidak bisa diregenerate lagi.
+										</p>
+									</div>
+								) : !isPublic && !readingMode && hasAudioGenerationInProgress ? (
+									<div
+										className={`rounded-[20px] border p-4 ${
+											nightMode
+												? "border-slate-700 bg-slate-950/60"
+												: "border-slate-200 bg-white/90"
+										}`}
+									>
+										<p className={`text-sm ${nightMode ? "text-slate-300" : "text-slate-600"}`}>
+											Audio bagian ini sedang dibuat. Tunggu sampai selesai sebelum mengubah
+											teksnya.
 										</p>
 									</div>
 								) : null}
@@ -315,7 +330,11 @@ export function StoryReader({
 											<Button
 												type="button"
 												variant="outline"
-												disabled={isGeneratingAudio || part.voiceStatus === "generating"}
+												disabled={
+													isGeneratingAudio ||
+													part.voiceStatus === "generating" ||
+													isRegeneratingPart
+												}
 												className="rounded-full"
 												onClick={() => {
 													onGenerateAudio(part.order - 1);

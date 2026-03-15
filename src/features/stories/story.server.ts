@@ -1144,6 +1144,10 @@ export async function regenerateStoryPart(storyId: string, index: number, prompt
 		throw new Error("Bagian yang sudah punya audio tidak bisa diregenerate lagi.");
 	}
 
+	if (part.voiceStatus === "generating") {
+		throw new Error("Tunggu audio bagian ini selesai dibuat sebelum mengubah teksnya.");
+	}
+
 	const attempts = part.regenerationAttempts ?? 0;
 	if (attempts >= 3) {
 		throw new Error("Batas regenerate untuk bagian ini sudah habis.");
@@ -1176,9 +1180,6 @@ export async function regenerateStoryPart(storyId: string, index: number, prompt
 			illustrationKey: undefined,
 			illustrationStatus: "queued",
 			illustrationFailureReason: undefined,
-			voiceKey: undefined,
-			voiceStatus: "queued",
-			voiceFailureReason: undefined,
 		};
 		const fullContent = buildStoryContent(parts);
 
