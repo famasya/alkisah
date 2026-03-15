@@ -31,7 +31,7 @@ function LibraryPage() {
 						<LibraryBig className="mr-2 size-4" />
 						Public Library
 					</div>
-					<p className="font-heading text-4xl text-slate-900">Perpustakaan Cerita Anak Indonesia</p>
+					<p className="font-heading text-4xl text-slate-900">Pustaka Cerita Anak Indonesia</p>
 					<p className="max-w-2xl text-sm leading-7 text-slate-600">
 						Semua cerita di sini sudah dibuka versi premium dan dipilih untuk tampil publik oleh
 						pemiliknya.

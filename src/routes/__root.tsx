@@ -27,7 +27,7 @@ export const Route = createRootRouteWithContext<{
 			...seo({
 				title: "Alkisah | Cerita Anak Personal dengan Audio AI",
 				description:
-					"Buat cerita anak personal dalam 10 detik, buka audio premium dengan sekali bayar, dan bagikan ke perpustakaan cerita publik.",
+					"Buat cerita anak personal dalam 10 detik, buka audio premium dengan sekali bayar, dan bagikan ke pustaka cerita publik.",
 			}),
 		],
 		links: [

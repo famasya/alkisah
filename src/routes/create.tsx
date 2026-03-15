@@ -59,7 +59,7 @@ function CreateStoryPage() {
 					<p className="font-heading text-4xl text-slate-900">Mulai dari tiga detail sederhana.</p>
 					<p className="text-sm leading-7 text-slate-600">
 						{hasFreeQuota
-							? "Cerita biasanya dibangun menjadi 3 sampai 8 bagian sesuai ritme yang paling cocok untuk anak, tetapi bisa lebih panjang kalau dibutuhkan agar ending-nya tetap utuh. Setelah itu tiap bagian dibuatkan ilustrasi sendiri supaya lebih enak dibaca bersama."
+							? "Cerita dibagi menjadi 3–8 bagian mengikuti alur yang paling pas untuk anak, atau lebih panjang kalau memang dibutuhkan. Lalu tiap bagian dibuatkan ilustrasinya sendiri supaya lebih nyaman dibaca bersama."
 							: "Kuota gratis harianmu sudah terpakai. Kamu tetap bisa lanjut membuat cerita baru, tetapi pembayaran Rp7.000 dilakukan di depan melalui Mayar dan cerita premium baru akan dibuat setelah pembayaran dikonfirmasi."}
 					</p>
 				</div>

@@ -51,7 +51,7 @@ function DesktopNav() {
 				search={{ sort: "newest", page: 1 }}
 				className="transition hover:text-slate-900"
 			>
-				Perpustakaan
+				Pustaka Publik
 			</Link>
 		</nav>
 	);

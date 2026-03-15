@@ -1,6 +1,6 @@
 # Alkisah
 
-**Tagline:** Buat cerita anak custom dalam 10 detik + suara ElevenLabs yang hidup. Bayar sekali Rp5.000, share ke publik, dan masuk ke perpustakaan cerita anak Indonesia.
+**Tagline:** Buat cerita anak custom dalam 10 detik + suara ElevenLabs yang hidup. Bayar sekali Rp5.000, share ke publik, dan masuk ke pustaka cerita anak Indonesia.
 
 ## 1. Overview & Tujuan
 

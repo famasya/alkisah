@@ -1,55 +1,67 @@
 # Repository Guidelines
 
+## Project Overview
+
+**Alkisah** is an AI-powered children's story generator for Indonesian families. It creates personalized stories (450-600 words + illustrations) featuring a child's name, age, and chosen theme.
+
+### What It Does
+
+- **Story Generation**: Uses AI to generate custom children's stories with personalized characters and narratives
+- **Illustrations**: Auto-generates 4 matching illustrations for each story
+- **Voice Narration**: ElevenLabs integration for natural Indonesian voice reading
+- **Freemium Model**: 3 free stories/day; premium unlock (Rp7,000 via Mayar) enables full audio + public sharing
+- **Public Library**: Users can share stories publicly; browsable by anyone without login
+- **Shareable Links**: Public stories get short URLs (`/s/[slug]`) for easy sharing
+
+### Target Users
+
+Parents of children aged 3-10, teachers, grandparents, and parenting content creators.
+
 ## Project Structure & Module Organization
 
-This repository is a TanStack Start app targeting Cloudflare Workers. Application code lives in `src/`.
+This repo is a TanStack Start app deployed to Cloudflare Workers. Keep application code in `src/`.
 
-- `src/routes/`: file-based route entries such as `index.tsx` and `__root.tsx`
-- `src/components/`: shared React components, including `ui/` primitives
-- `src/lib/`: small reusable helpers
-- `src/utils/`: app-specific utilities like SEO, data helpers, and middleware
-- `src/styles/`: global styles in `app.css`
-- `public/`: static assets such as `site.webmanifest`
+- `src/routes/`: file-based routes such as `index.tsx`, `create.tsx`, and auth callback routes.
+- `src/components/`: shared UI and layout pieces; reusable primitives live in `src/components/ui/`.
+- `src/features/`: server-facing story, media, and provider logic.
+- `src/db/`: Drizzle schema and D1 database access.
+- `src/lib/` and `src/utils/`: small helpers and app utilities.
+- `src/styles/`: global CSS.
+- `public/`: static assets such as `site.webmanifest`.
+- `drizzle/`: generated SQL migrations and metadata.
 
-Generated files include `src/routeTree.gen.ts` and `worker-configuration.d.ts`; do not hand-edit them.
+Do not hand-edit generated files like `src/routeTree.gen.ts` or `worker-configuration.d.ts`.
 
 ## Build, Test, and Development Commands
 
 Use Bun for local workflows.
 
-- `bun install`: install dependencies and regenerate Cloudflare types
-- `bun run dev`: start the Vite dev server
-- `bun run build`: create the production build and run `tsc --noEmit`
-- `bun run preview`: preview the built app locally
-- `bun run deploy`: deploy via Wrangler
-- `bun run lint`: apply `oxlint` fixes and format with `oxfmt`
-- `bun run lint:check`: verify lint and formatting without changing files
-- `bun run format`: format the repo with `oxfmt`
-- `bun run cf-typegen`: regenerate `worker-configuration.d.ts`
+- `bun install`: install dependencies and refresh Cloudflare types.
+- `bun run dev`: start the Vite dev server.
+- `bun run build`: production build plus `tsc --noEmit`.
+- `bun run preview`: preview the built app locally.
+- `bun run lint`: apply `oxlint` fixes and format with `oxfmt`.
+- `bun run lint:check`: verify lint and formatting without changes.
+- `bun run db:generate`: generate Drizzle migrations into `drizzle/`.
+- `bun run db:migrate:local`: apply pending D1 migrations locally.
+- `bun run db:migrate:remote`: apply pending D1 migrations remotely.
 
 ## Coding Style & Naming Conventions
 
-TypeScript and React use tabs for indentation. Formatting and linting are enforced with Oxc via `.oxfmtrc.json` and `.oxlintrc.json`. Run `bun run lint` before opening a PR.
+TypeScript and React files use tabs for indentation. Follow existing naming patterns:
 
-Follow existing naming patterns:
+- route files: lowercase, file-based names such as `sign-in.tsx`
+- component files: lowercase filenames with exported PascalCase components
+- utilities: descriptive lowercase or camel-case names
 
-- route files: lowercase, file-based names like `index.tsx`
-- React components: lowercase file names in this repo, exported PascalCase symbols
-- utility modules: descriptive camel-case or lowercase names, for example `loggingMiddleware.tsx`
-
-Prefer small modules and colocate route-specific logic near the route when practical.
+Formatting and linting are enforced with Oxc (`oxlint`, `oxfmt`). Keep modules small and colocate feature logic when practical.
 
 ## Testing Guidelines
 
-There is no dedicated test runner configured yet. Until one is added, treat `bun run build` and `bun run lint:check` as the required validation baseline. If you add tests, keep them near the feature or under `src/` using `*.test.ts` or `*.test.tsx`.
+There is no dedicated test runner yet. Treat `bun run build` and `bun run lint:check` as the required validation baseline. If you add tests, place them near the feature under `src/` using `*.test.ts` or `*.test.tsx`.
 
 ## Commit & Pull Request Guidelines
 
-Recent history uses short, imperative subjects such as `feat: package upgrade & add tanstack query` and `upgrade packages`. Keep commits focused and easy to scan.
+Recent commits use short, imperative subjects, often sentence case, for example `Update dependencies and add R2 configuration to worker types`. Keep commits focused and readable.
 
-Pull requests should include:
-
-- a short description of the change and its impact
-- linked issue or task reference when applicable
-- screenshots or short recordings for UI changes
-- confirmation that `bun run build` and `bun run lint:check` passed
+PRs should include a short summary, linked issue or task when relevant, screenshots for UI changes, and confirmation that `bun run build` passed. Note any required env vars, D1 migrations, or Cloudflare config changes in the PR description.

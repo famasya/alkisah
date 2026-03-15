@@ -16,7 +16,7 @@ const featureCards = [
 		icon: LockKeyhole,
 	},
 	{
-		title: "Perpustakaan publik",
+		title: "Pustaka Publik",
 		body: "Cerita yang dibagikan dapat dipublikasikan di library publik dan bisa dibaca siapa saja tanpa login.",
 		icon: LibraryBig,
 	},

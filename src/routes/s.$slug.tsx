@@ -62,8 +62,8 @@ function PublicStoryPage() {
 								nightMode ? "text-slate-300" : "text-slate-600"
 							}`}
 						>
-							Dibuat untuk {story.childName}. Cerita ini dibagikan oleh keluarganya ke perpustakaan
-							Alkisah.
+							Dibuat untuk {story.childName}. Cerita ini dibagikan oleh pemilik cerita ke pustaka
+							publik Alkisah.
 						</p>
 					</div>
 					<Button

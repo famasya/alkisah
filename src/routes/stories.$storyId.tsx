@@ -425,7 +425,7 @@ function StoryDetailPage() {
 									className={`text-sm leading-7 ${nightMode ? "text-slate-300" : "text-slate-600"}`}
 								>
 									{story.isPublic
-										? "Cerita ini sudah muncul di perpustakaan publik. Kamu bisa tetap membiarkannya terbuka atau menyembunyikannya kembali kapan saja."
+										? "Cerita ini sudah muncul di pustaka publik. Kamu bisa tetap membiarkannya terbuka atau menyembunyikannya kembali kapan saja."
 										: "Setelah unlock, cerita premium otomatis tetap private dan masuk ke Cerita Saya. Kamu bisa membiarkannya tetap pribadi atau membagikannya ke library publik kapan saja. Audio per bagian tetap opsional dan bisa dibuat nanti."}
 								</p>
 							</div>
