@@ -18,11 +18,11 @@
 		},
 	],
 	"vars": {
-		"APP_URL": "http://localhost:3000",
-		"VITE_CLERK_PUBLISHABLE_KEY": "pk_test_replace_me",
+		"APP_URL": "https://alkisah.abidf.com",
+		"VITE_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsuYWxraXNhaC5hYmlkZi5jb20k",
 		"OPENROUTER_TEXT_MODEL": "x-ai/grok-4.1-fast",
 		"OPENROUTER_IMAGE_MODEL": "bytedance-seed/seedream-4.5",
-		"ELEVENLABS_VOICE_ID": "replace-with-elevenlabs-voice-id",
+		"ELEVENLABS_VOICE_ID": "zd0hd2egR1Q6EzSLTzCp",
 		"MAYAR_API_BASE_URL": "https://api.mayar.id/hl/v1",
 	},
 }
