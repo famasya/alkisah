@@ -4,7 +4,7 @@
 
 Create personalized stories featuring your child's name, age, and chosen theme — complete with illustrations and natural Indonesian voice narration.
 
-[alkisah.id](https://alkisah.id)
+[alkisah.abidf.com](https://alkisah.abidf.com)
 
 ## What It Does
 

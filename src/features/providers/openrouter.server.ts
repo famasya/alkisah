@@ -21,6 +21,95 @@ type StoryPartRegenerationResult = {
 	illustrationPrompt: string;
 };
 
+const MIN_NARRATION_WORDS = 7;
+
+function countWords(value: string) {
+	return value.trim().split(/\s+/).filter(Boolean).length;
+}
+
+const narrationSentenceSchema = z
+	.string()
+	.trim()
+	.min(1)
+	.refine((value) => countWords(value) >= MIN_NARRATION_WORDS, {
+		message: `Each narration sentence must contain at least ${MIN_NARRATION_WORDS} words.`,
+	});
+
+const storyWriterBaseSystemPrompt = `
+You are a professional children's story writer.
+
+Your task is to create engaging, age-appropriate children's stories that are imaginative, emotionally warm, and easy to understand.
+
+GENERAL RULES
+- Target age: 4-8 years old
+- Language must be simple and clear
+- Avoid complex vocabulary
+- Sentences should be short and rhythmic
+- Stories must be safe and positive
+- No violence, horror, or frightening themes
+- Focus on friendship, curiosity, kindness, courage, or problem solving
+- The story should contain a gentle lesson but should not sound preachy
+
+STORY STRUCTURE
+
+Follow this narrative structure:
+
+1. INTRODUCTION
+Introduce the main character and their world.
+
+2. PROBLEM
+The character faces a small but meaningful challenge.
+
+3. ATTEMPTS
+The character tries to solve the problem. The first attempt fails. The second attempt almost works.
+
+4. TWIST
+An unexpected idea, friend, or discovery changes the situation.
+
+5. RESOLUTION
+The problem is solved and the character learns something meaningful.
+
+STYLE
+
+- Use vivid, visual descriptions suitable for illustration.
+- Emphasize emotions and actions instead of explanations.
+- Include playful or surprising moments.
+- Use repetition or patterns when appropriate.
+
+ALKISAH REQUIREMENTS
+- Write the story in Bahasa Indonesia.
+- Personalize the child protagonist using the provided name, age, and theme.
+- Keep one child protagonist consistently named and use at most one helper figure.
+- The tone should feel warm, cozy, and satisfying to read aloud before bedtime.
+- For age 3, lean toward the youngest end of the target range.
+- For ages 9-10, keep the language inside the same simple 4-8 readability band while allowing slightly more logical problem solving.
+- Never rush the ending.
+`.trim();
+
+const fullStorySystemPrompt = `
+${storyWriterBaseSystemPrompt}
+
+OUTPUT RULES
+- Usually produce 4 to 6 story parts. Use 7 parts only when needed for a natural ending.
+- Each part must contain 4 or 5 complete Indonesian narration sentences.
+- Each narration sentence should usually be medium length, smooth when read aloud, and never feel clipped or fragment-like.
+- Aim for roughly 450 to 650 words total.
+- The characterGuide must be one concise English sentence describing the child protagonist with stable age, hairstyle, face shape, skin tone, recurring pajamas or outfit, and one memorable accessory so the same wording can be reused for every image.
+- Each illustrationPrompt must be one English sentence for a whimsical pastel storybook illustration that keeps the child character visually consistent across all parts, adds complementary visual details beyond the narration, and clearly describes setting, mood, action, and recurring outfit or visual anchors.
+- Use the exact same character terms as the characterGuide and prioritize character consistency over background details.
+`.trim();
+
+const sectionRewriteSystemPrompt = `
+${storyWriterBaseSystemPrompt}
+
+SECTION REWRITE RULES
+- Rewrite only one section while preserving continuity with the surrounding sections.
+- Return 4 or 5 complete Indonesian narration sentences.
+- Keep the sentences fuller and more flowing than short one-liners.
+- Do not introduce a brand new plot or break the current ending.
+- The illustrationPrompt must be one English sentence for a whimsical pastel storybook illustration that reuses the exact same character wording and outfit or accessory anchors when a character guide is provided.
+`.trim();
+
 const storyGenerationSchema = z.object({
 	title: z.string().trim().min(1),
 	characterGuide: z.string().trim().min(1),
@@ -28,7 +117,7 @@ const storyGenerationSchema = z.object({
 		.array(
 			z.object({
 				order: z.number().int().positive().optional(),
-				narrations: z.array(z.string().trim().min(1)).min(3).max(4),
+				narrations: z.array(narrationSentenceSchema).min(4).max(5),
 				illustrationPrompt: z.string().trim().min(1),
 			}),
 		)
@@ -36,7 +125,7 @@ const storyGenerationSchema = z.object({
 });
 
 const storyPartRegenerationSchema = z.object({
-	narrations: z.array(z.string().trim().min(1)).min(3).max(4),
+	narrations: z.array(narrationSentenceSchema).min(4).max(5),
 	illustrationPrompt: z.string().trim().min(1),
 });
 
@@ -95,9 +184,11 @@ function normalizeMessageContent(content: unknown) {
 export async function generateStoryDraft(input: CreateStoryInput): Promise<StoryGenerationResult> {
 	const themeDetail = input.customTheme ? `${input.theme} (${input.customTheme})` : input.theme;
 	const ageDirection =
-		input.age <= 5
-			? "Use simple rhythmic language, repetition, concrete imagery, and one gentle idea."
-			: "Use accessible language with a clear problem, a few attempts, and a warm resolution.";
+		input.age <= 4
+			? "Gunakan kosakata yang sangat sederhana, ritme lembut, pengulangan ringan, dan gambaran yang konkret."
+			: input.age <= 8
+				? "Gunakan bahasa sederhana, emosi yang hangat, dan masalah kecil yang mudah diikuti."
+				: "Tetap gunakan bahasa sederhana seperti bacaan usia 4-8, tetapi biarkan pemecahan masalah terasa sedikit lebih logis.";
 	const { output } = await generateText({
 		model: getTextProvider().chatModel(env.OPENROUTER_TEXT_MODEL),
 		temperature: 0.85,
@@ -107,9 +198,16 @@ export async function generateStoryDraft(input: CreateStoryInput): Promise<Story
 			description:
 				"A complete Indonesian bedtime story draft with a reusable character guide and ordered story parts.",
 		}),
-		system:
-			"You write warm Indonesian children's bedtime stories in Bahasa Indonesia. Follow the children-story guideline explicitly: align the plot to the child's developmental stage, introduce only one new concept at a time, use a simplified story grammar with character introduction, problem, attempts, obstacle, resolution, and emotional lesson, and rely on complementary picture-text storytelling instead of duplicating narration verbatim in the art notes. For ages 3-6 favor repetition, rhythm, concrete imagery, fantasy, empathy, and very clear consequences. For ages 7-10 keep the plot logical, gentle, and easy to follow. Aim for roughly 400 words total and usually 3 to 8 parts, but never truncate the ending just to stay within that range. If the story naturally needs more parts for a satisfying ending, include them. The characterGuide must be one concise English sentence describing the child protagonist with stable age, hairstyle, face shape, skin tone, recurring pajamas or outfit, and one memorable accessory so the same wording can be reused for every image. Each narrations array must contain 3 or 4 short Indonesian sentences. Keep one child protagonist consistently named, one helper figure at most, one central challenge, and a soft moral ending. Each illustrationPrompt must be one English sentence for a whimsical pastel storybook illustration that keeps the child character visually consistent across all parts, adds complementary visual details beyond the narration, and clearly describes setting, mood, action, and recurring outfit or visual anchors. Use the exact same character terms as the characterGuide and prioritize character consistency over background details.",
-		prompt: `Nama anak: ${input.childName}\nUsia: ${input.age}\nTema: ${themeDetail}\nArahan usia: ${ageDirection}\nTulis cerita personal dalam Bahasa Indonesia sebagai beberapa bagian berurutan. Biasanya 3 sampai 8 bagian, tetapi selesaikan cerita dengan ending yang utuh walau perlu lebih banyak bagian. Targetkan total cerita sekitar 400 kata, tetap hangat, visual, lembut, dan cocok dibacakan sebelum tidur.`,
+		system: fullStorySystemPrompt,
+		prompt:
+			`Nama anak: ${input.childName}\n` +
+			`Usia: ${input.age}\n` +
+			`Tema: ${themeDetail}\n` +
+			`Arahan usia: ${ageDirection}\n\n` +
+			"Tulis cerita personal lengkap dalam Bahasa Indonesia.\n" +
+			"Ikuti alur ini dengan jelas: pengenalan, masalah kecil, percobaan pertama gagal, percobaan kedua hampir berhasil, twist hangat, lalu resolusi yang memuaskan.\n" +
+			"Buat narasi terasa utuh, lembut, visual, dan enak dibacakan, bukan potongan kalimat yang terlalu pendek.\n" +
+			"Jaga cerita tetap aman, positif, hangat, dan cocok untuk dibacakan sebelum tidur.",
 	});
 	const parsed = storyGenerationSchema.parse(output);
 
@@ -152,8 +250,7 @@ export async function regenerateStorySection(input: {
 			description:
 				"An updated Indonesian story section that preserves continuity with the surrounding sections.",
 		}),
-		system:
-			"You rewrite one section of an Indonesian children's story. Follow the same children-story guideline as the full story generator: age-appropriate, warm, concrete, emotionally safe, and easy to read aloud. Preserve continuity with the rest of the story, keep the same protagonist, and do not introduce a new plot that breaks the ending. Return 3 or 4 short Indonesian narration sentences plus one English illustration prompt for a whimsical pastel storybook image. The illustration prompt must reuse the exact same character wording and outfit/accessory anchors when a character guide is provided.",
+		system: sectionRewriteSystemPrompt,
 		prompt:
 			`Judul cerita: ${input.title}\n` +
 			`Nama anak: ${input.childName}\n` +
@@ -164,7 +261,7 @@ export async function regenerateStorySection(input: {
 			`Narasi bagian saat ini: ${input.currentNarrations.join(" ")}\n` +
 			`Konteks semua bagian:\n${sectionsContext}\n\n` +
 			`Instruksi pengguna untuk bagian ini: ${input.prompt}\n\n` +
-			"Buat ulang hanya bagian tersebut. Pertahankan posisi bagian dalam alur cerita, jangan ubah bagian lain, dan pastikan hasilnya tetap selaras dengan awal serta akhir cerita.",
+			"Buat ulang hanya bagian tersebut. Pertahankan posisi bagian dalam alur cerita, jangan ubah bagian lain, pastikan hasilnya tetap selaras dengan awal serta akhir cerita, dan hindari kalimat yang terlalu pendek atau terasa terputus-putus.",
 	});
 
 	const parsed = storyPartRegenerationSchema.parse(output);
