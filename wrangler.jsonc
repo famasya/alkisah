@@ -13,7 +13,7 @@
 	"d1_databases": [
 		{
 			"binding": "DB",
-			"database_name": "alkisah-db",
+			"database_name": "alkisah",
 			"database_id": "ff99adfe-ea7b-43fc-8121-7f5f77b5b5cf",
 		},
 	],
@@ -27,11 +27,6 @@
 		},
 	],
 	"vars": {
-		"OPENROUTER_API_KEY": "sk-or-v1-xxxxxxxx",
-		"ELEVENLABS_API_KEY": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-		"MAYAR_API_KEY": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-		"CLERK_SECRET_KEY": "sk_live_xxxxxxxxxxxxx",
-
 		"APP_URL": "https://alkisah.abidf.com",
 		"VITE_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsuYWxraXNhaC5hYmlkZi5jb20k",
 		"OPENROUTER_TEXT_MODEL": "x-ai/grok-4.1-fast",

@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { getWorkerSecrets } from "~/lib/worker-secrets.server";
 
 type MediaAssetKind = "audio" | "image";
 
@@ -29,9 +29,10 @@ function buildPayload(input: {
 }
 
 async function getSigningKey() {
+	const secrets = getWorkerSecrets();
 	signingKeyPromise ??= crypto.subtle.importKey(
 		"raw",
-		encoder.encode(env.CLERK_SECRET_KEY),
+		encoder.encode(secrets.CLERK_SECRET_KEY),
 		{ name: "HMAC", hash: "SHA-256" },
 		false,
 		["sign"],

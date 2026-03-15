@@ -1,4 +1,5 @@
 import { env } from "cloudflare:workers";
+import { getWorkerSecrets } from "~/lib/worker-secrets.server";
 
 type CreateMayarPaymentInput = {
 	name: string;
@@ -31,8 +32,9 @@ function getBaseUrl() {
 }
 
 function getHeaders() {
+	const secrets = getWorkerSecrets();
 	return {
-		Authorization: `Bearer ${env.MAYAR_API_KEY}`,
+		Authorization: `Bearer ${secrets.MAYAR_API_KEY}`,
 		"Content-Type": "application/json",
 	};
 }

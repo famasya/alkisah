@@ -1,11 +1,13 @@
 import { env } from "cloudflare:workers";
 import { ElevenLabsClient, ElevenLabsError } from "@elevenlabs/elevenlabs-js";
+import { getWorkerSecrets } from "~/lib/worker-secrets.server";
 
 let client: ElevenLabsClient | undefined;
 
 function getClient() {
+	const secrets = getWorkerSecrets();
 	client ??= new ElevenLabsClient({
-		apiKey: env.ELEVENLABS_API_KEY,
+		apiKey: secrets.ELEVENLABS_API_KEY,
 	});
 
 	return client;

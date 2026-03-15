@@ -3,6 +3,7 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { generateText, Output } from "ai";
 import { OpenRouter } from "@openrouter/sdk";
 import { z } from "zod";
+import { getWorkerSecrets } from "~/lib/worker-secrets.server";
 import type { CreateStoryInput } from "../stories/story.schemas";
 
 type StoryGenerationResult = {
@@ -36,8 +37,9 @@ let textProvider:
 const appUrl = env.APP_URL || "http://localhost:3000";
 
 function getClient() {
+	const secrets = getWorkerSecrets();
 	client ??= new OpenRouter({
-		apiKey: env.OPENROUTER_API_KEY,
+		apiKey: secrets.OPENROUTER_API_KEY,
 		httpReferer: appUrl,
 		xTitle: "Alkisah",
 	});
@@ -46,10 +48,11 @@ function getClient() {
 }
 
 function getTextProvider() {
+	const secrets = getWorkerSecrets();
 	textProvider ??= createOpenAICompatible({
 		name: "openrouter",
 		baseURL: "https://openrouter.ai/api/v1",
-		apiKey: env.OPENROUTER_API_KEY,
+		apiKey: secrets.OPENROUTER_API_KEY,
 		headers: {
 			"HTTP-Referer": appUrl,
 			"X-Title": "Alkisah",
