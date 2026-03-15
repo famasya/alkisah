@@ -20,6 +20,12 @@
 	"placement": {
 		"mode": "smart",
 	},
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  },
 	"r2_buckets": [
 		{
 			"binding": "MEDIA_BUCKET",
