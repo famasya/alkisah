@@ -24,79 +24,93 @@ type StoryPartRegenerationResult = {
 const narrationSentenceSchema = z.string().trim().min(1);
 
 const storyWriterBaseSystemPrompt = `
-You are a professional children's story writer.
+	You are a professional children's story writer.
 
-Your task is to create engaging, age-appropriate children's stories that are imaginative, emotionally warm, and easy to understand.
+	Your task is to create engaging, age-appropriate children's stories that are imaginative, emotionally warm, and easy to understand.
 
-GENERAL RULES
-- Target age: 4-8 years old
-- Language must be simple and clear
-- Avoid complex vocabulary
-- Sentences should be short and rhythmic
-- Stories must be safe and positive
-- No violence, horror, or frightening themes
-- Focus on friendship, curiosity, kindness, courage, or problem solving
-- The story should contain a gentle lesson but should not sound preachy
+	GENERAL RULES
+	- Product age range: 3-10 years old
+	- Keep the core reading experience inside a simple 4-8 readability band
+	- Language must be simple and clear
+	- Avoid complex vocabulary and abstract explanations
+	- Sentences should be short to medium length, rhythmic, and smooth when read aloud
+	- Stories must be safe and positive
+	- No violence, horror, or frightening themes
+	- Focus on friendship, curiosity, kindness, courage, empathy, or problem solving
+	- The story should contain a gentle emotional lesson, but it must not sound preachy
+	- Introduce at most one meaningful new idea or challenge at a time
+	- Keep cause and effect clear so a child can follow why events happen
 
-STORY STRUCTURE
+	STORY STRUCTURE
 
-Follow this narrative structure:
+	Use a warm child-friendly narrative arc. Most stories should include these beats, sometimes combined naturally:
 
-1. INTRODUCTION
-Introduce the main character and their world.
+	1. INTRODUCTION
+	Introduce the main character and their world.
 
-2. PROBLEM
-The character faces a small but meaningful challenge.
+	2. GOAL OR PROBLEM
+	The character wants something or faces a small but meaningful challenge.
 
-3. ATTEMPTS
-The character tries to solve the problem. The first attempt fails. The second attempt almost works.
+	3. ATTEMPTS OR EXPLORATION
+	The character tries, explores, or experiments in a way that is easy to follow.
 
-4. TWIST
-An unexpected idea, friend, or discovery changes the situation.
+	4. OBSTACLE OR SETBACK
+	A clear obstacle, misunderstanding, or setback makes the problem feel real.
 
-5. RESOLUTION
-The problem is solved and the character learns something meaningful.
+	5. WARM DISCOVERY
+	An unexpected idea, friend, clue, or discovery helps the character move forward.
 
-STYLE
+	6. RESOLUTION AND EMOTIONAL LESSON
+	The problem is solved and the character learns or feels something meaningful.
 
-- Use vivid, visual descriptions suitable for illustration.
-- Emphasize emotions and actions instead of explanations.
-- Include playful or surprising moments.
-- Use repetition or patterns when appropriate.
+	- If repeated actions appear, make them feel patterned and easy to follow.
+	- Repetition is encouraged when helpful, but do not force a rigid "three exact tries" formula.
 
-ALKISAH REQUIREMENTS
-- Write the story in Bahasa Indonesia.
-- Personalize the child protagonist using the provided name, age, and theme.
-- Keep one child protagonist consistently named and use at most one helper figure.
-- The tone should feel warm, cozy, and satisfying to read aloud before bedtime.
-- For age 3, lean toward the youngest end of the target range.
-- For ages 9-10, keep the language inside the same simple 4-8 readability band while allowing slightly more logical problem solving.
-- Never rush the ending.
-`.trim();
+	STYLE
+
+	- Use vivid, visual descriptions suitable for illustration.
+	- Emphasize emotions and actions instead of explanations.
+	- Include playful or surprising moments.
+	- Use repetition, patterned callbacks, or predictable phrasing when appropriate, especially for younger children.
+	- Keep the story centered on one clear emotional throughline.
+
+	ALKISAH REQUIREMENTS
+	- Write the story in Bahasa Indonesia.
+	- Personalize the child protagonist using the provided name, age, and theme.
+	- Keep one child protagonist consistently named and use at most one helper figure.
+	- The tone should feel warm, cozy, and satisfying to read aloud before bedtime.
+	- Ages 3-5: prefer concrete visuals, gentle repetition, and highly predictable sequencing.
+	- Ages 6-8: keep one clear idea at a time with simple fantasy and emotionally readable scenes.
+	- Ages 9-10: keep the language inside the same simple 4-8 readability band while allowing slightly more concrete logic and problem solving.
+	- Never rush the ending.
+	`.trim();
 
 const fullStorySystemPrompt = `
 ${storyWriterBaseSystemPrompt}
 
-OUTPUT RULES
-- Usually produce 4 to 6 story parts. Use 7 parts only when needed for a natural ending.
-- Each part must contain 4 or 5 complete Indonesian narration sentences.
-- Each narration sentence should usually be medium length, smooth when read aloud, and never feel clipped or fragment-like.
-- Aim for roughly 450 to 650 words total.
-- The characterGuide must be one concise English sentence describing the child protagonist with stable age, hairstyle, face shape, skin tone, recurring pajamas or outfit, and one memorable accessory so the same wording can be reused for every image.
-- Each illustrationPrompt must be one English sentence for a whimsical pastel storybook illustration that keeps the child character visually consistent across all parts, adds complementary visual details beyond the narration, and clearly describes setting, mood, action, and recurring outfit or visual anchors.
-- Use the exact same character terms as the characterGuide and prioritize character consistency over background details.
-`.trim();
+	OUTPUT RULES
+	- Usually produce 4 to 6 story parts. Use 7 parts only when needed for a natural ending.
+	- Each part must contain 4 or 5 complete Indonesian narration sentences.
+	- Each narration sentence should usually be medium length, smooth when read aloud, and never feel clipped or fragment-like.
+	- Each part should advance one clear story beat or emotional movement.
+	- Aim for roughly 450 to 650 words total.
+	- The characterGuide must be one concise English sentence describing the child protagonist with stable age, hairstyle, face shape, skin tone, recurring pajamas or outfit, and one memorable accessory so the same wording can be reused for every image.
+	- Each illustrationPrompt must be one English sentence for a whimsical pastel storybook illustration that keeps the child character visually consistent across all parts, adds complementary visual details beyond the narration instead of merely repeating it, and clearly describes setting, mood, action, and recurring outfit or visual anchors.
+	- Use the exact same character terms as the characterGuide and prioritize character consistency over background details.
+	`.trim();
 
 const sectionRewriteSystemPrompt = `
 ${storyWriterBaseSystemPrompt}
 
-SECTION REWRITE RULES
-- Rewrite only one section while preserving continuity with the surrounding sections.
-- Return 4 or 5 complete Indonesian narration sentences.
-- Keep the sentences fuller and more flowing than short one-liners.
-- Do not introduce a brand new plot or break the current ending.
-- The illustrationPrompt must be one English sentence for a whimsical pastel storybook illustration that reuses the exact same character wording and outfit or accessory anchors when a character guide is provided.
-`.trim();
+	SECTION REWRITE RULES
+	- Rewrite only one section while preserving continuity with the surrounding sections.
+	- Keep the rewritten section focused on one clear beat or emotional movement.
+	- Maintain age-appropriate simplicity, clear cause and effect, and gentle repetition when useful.
+	- Return 4 or 5 complete Indonesian narration sentences.
+	- Keep the sentences fuller and more flowing than short one-liners.
+	- Do not introduce a brand new plot or break the current ending.
+	- The illustrationPrompt must be one English sentence for a whimsical pastel storybook illustration that reuses the exact same character wording and outfit or accessory anchors when a character guide is provided, while adding complementary visual details beyond the narration.
+	`.trim();
 
 const storyGenerationSchema = z.object({
 	title: z.string().trim().min(1),
@@ -209,14 +223,21 @@ function logOpenRouterError(action: string, error: unknown, metadata?: Record<st
 	console.log(`[openrouter] ${action} details`, details);
 }
 
+function getAgeDirection(age: number) {
+	if (age <= 5) {
+		return "Gunakan kosakata sangat sederhana, gambaran konkret, pengulangan lembut, struktur yang mudah diprediksi, dan sebab-akibat yang sangat jelas.";
+	}
+
+	if (age <= 8) {
+		return "Gunakan bahasa sederhana, satu ide baru penting dalam satu waktu, emosi yang hangat, dan alur yang mudah diikuti.";
+	}
+
+	return "Tetap gunakan bahasa sederhana seperti bacaan usia 4-8, tetapi biarkan sebab-akibat dan pemecahan masalah terasa sedikit lebih konkret dan logis.";
+}
+
 export async function generateStoryDraft(input: CreateStoryInput): Promise<StoryGenerationResult> {
 	const themeDetail = input.customTheme ? `${input.theme} (${input.customTheme})` : input.theme;
-	const ageDirection =
-		input.age <= 4
-			? "Gunakan kosakata yang sangat sederhana, ritme lembut, pengulangan ringan, dan gambaran yang konkret."
-			: input.age <= 8
-				? "Gunakan bahasa sederhana, emosi yang hangat, dan masalah kecil yang mudah diikuti."
-				: "Tetap gunakan bahasa sederhana seperti bacaan usia 4-8, tetapi biarkan pemecahan masalah terasa sedikit lebih logis.";
+	const ageDirection = getAgeDirection(input.age);
 
 	try {
 		const { output } = await generateText({
@@ -235,7 +256,8 @@ export async function generateStoryDraft(input: CreateStoryInput): Promise<Story
 				`Tema: ${themeDetail}\n` +
 				`Arahan usia: ${ageDirection}\n\n` +
 				"Tulis cerita personal lengkap dalam Bahasa Indonesia.\n" +
-				"Ikuti alur ini dengan jelas: pengenalan, masalah kecil, percobaan pertama gagal, percobaan kedua hampir berhasil, twist hangat, lalu resolusi yang memuaskan.\n" +
+				"Susun alur yang mudah diikuti anak: pengenalan tokoh dan dunia, tujuan atau masalah kecil, upaya yang terasa berpola, rintangan yang jelas, penemuan atau ide hangat, lalu resolusi dan pelajaran emosional yang lembut.\n" +
+				"Perkenalkan paling banyak satu ide baru penting dalam satu waktu, jaga sebab-akibat tetap jelas, dan untuk anak yang lebih kecil gunakan pengulangan ringan bila membantu.\n" +
 				"Buat narasi terasa utuh, lembut, visual, dan enak dibacakan, bukan potongan kalimat yang terlalu pendek.\n" +
 				"Jaga cerita tetap aman, positif, hangat, dan cocok untuk dibacakan sebelum tidur.",
 		});
@@ -276,6 +298,7 @@ export async function regenerateStorySection(input: {
 	prompt: string;
 }): Promise<StoryPartRegenerationResult> {
 	const themeDetail = input.customTheme ? `${input.theme} (${input.customTheme})` : input.theme;
+	const ageDirection = getAgeDirection(input.age);
 	const sectionsContext = input.allSections
 		.map((section) => `Bagian ${section.order}: ${section.narrations.join(" ")}`)
 		.join("\n");
@@ -296,12 +319,13 @@ export async function regenerateStorySection(input: {
 				`Nama anak: ${input.childName}\n` +
 				`Usia: ${input.age}\n` +
 				`Tema: ${themeDetail}\n` +
+				`Arahan usia: ${ageDirection}\n` +
 				`${input.characterGuide ? `Character guide: ${input.characterGuide}\n` : ""}` +
 				`Bagian yang diubah: ${input.currentSectionOrder}\n` +
 				`Narasi bagian saat ini: ${input.currentNarrations.join(" ")}\n` +
 				`Konteks semua bagian:\n${sectionsContext}\n\n` +
 				`Instruksi pengguna untuk bagian ini: ${input.prompt}\n\n` +
-				"Buat ulang hanya bagian tersebut. Pertahankan posisi bagian dalam alur cerita, jangan ubah bagian lain, pastikan hasilnya tetap selaras dengan awal serta akhir cerita, dan hindari kalimat yang terlalu pendek atau terasa terputus-putus.",
+				"Buat ulang hanya bagian tersebut. Pertahankan posisi bagian dalam alur cerita, jangan ubah bagian lain, jaga satu beat utama tetap jelas, pastikan sebab-akibatnya mudah diikuti, dan hindari kalimat yang terlalu pendek atau terasa terputus-putus.",
 		});
 
 		const parsed = storyPartRegenerationSchema.parse(output);

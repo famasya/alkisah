@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as MyLibraryRouteImport } from './routes/my-library'
+import { Route as MethodologyRouteImport } from './routes/methodology'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as CreateRouteImport } from './routes/create'
 import { Route as IndexRouteImport } from './routes/index'
@@ -36,6 +37,11 @@ const SignInRoute = SignInRouteImport.update({
 const MyLibraryRoute = MyLibraryRouteImport.update({
   id: '/my-library',
   path: '/my-library',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MethodologyRoute = MethodologyRouteImport.update({
+  id: '/methodology',
+  path: '/methodology',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LibraryRoute = LibraryRouteImport.update({
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
   '/library': typeof LibraryRoute
+  '/methodology': typeof MethodologyRoute
   '/my-library': typeof MyLibraryRoute
   '/sign-in': typeof SignInRouteWithChildren
   '/sign-up': typeof SignUpRouteWithChildren
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
   '/library': typeof LibraryRoute
+  '/methodology': typeof MethodologyRoute
   '/my-library': typeof MyLibraryRoute
   '/sign-in': typeof SignInRouteWithChildren
   '/sign-up': typeof SignUpRouteWithChildren
@@ -126,6 +134,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
   '/library': typeof LibraryRoute
+  '/methodology': typeof MethodologyRoute
   '/my-library': typeof MyLibraryRoute
   '/sign-in': typeof SignInRouteWithChildren
   '/sign-up': typeof SignUpRouteWithChildren
@@ -143,6 +152,7 @@ export interface FileRouteTypes {
     | '/'
     | '/create'
     | '/library'
+    | '/methodology'
     | '/my-library'
     | '/sign-in'
     | '/sign-up'
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/'
     | '/create'
     | '/library'
+    | '/methodology'
     | '/my-library'
     | '/sign-in'
     | '/sign-up'
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/'
     | '/create'
     | '/library'
+    | '/methodology'
     | '/my-library'
     | '/sign-in'
     | '/sign-up'
@@ -189,6 +201,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CreateRoute: typeof CreateRoute
   LibraryRoute: typeof LibraryRoute
+  MethodologyRoute: typeof MethodologyRoute
   MyLibraryRoute: typeof MyLibraryRoute
   SignInRoute: typeof SignInRouteWithChildren
   SignUpRoute: typeof SignUpRouteWithChildren
@@ -220,6 +233,13 @@ declare module '@tanstack/react-router' {
       path: '/my-library'
       fullPath: '/my-library'
       preLoaderRoute: typeof MyLibraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/methodology': {
+      id: '/methodology'
+      path: '/methodology'
+      fullPath: '/methodology'
+      preLoaderRoute: typeof MethodologyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/library': {
@@ -321,6 +341,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CreateRoute: CreateRoute,
   LibraryRoute: LibraryRoute,
+  MethodologyRoute: MethodologyRoute,
   MyLibraryRoute: MyLibraryRoute,
   SignInRoute: SignInRouteWithChildren,
   SignUpRoute: SignUpRouteWithChildren,
