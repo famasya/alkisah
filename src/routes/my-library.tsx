@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BookLock, LibraryBig } from "lucide-react";
+import { motion } from "framer-motion";
 import { PrivateLibraryCard } from "~/components/private-library-card";
 import { Button } from "~/components/ui/button";
 import { listPrivateStoriesFn } from "~/features/stories/story.functions";
@@ -26,7 +27,12 @@ function MyLibraryPage() {
 	const stories = Route.useLoaderData();
 
 	return (
-		<div className="space-y-8">
+		<motion.div
+			initial={{ opacity: 0, y: 24 }}
+			animate={{ opacity: 1, y: 0 }}
+			transition={{ duration: 0.5 }}
+			className="space-y-8"
+		>
 			<section className="flex flex-col gap-5 rounded-[32px] border border-white/70 bg-white/80 p-7 shadow-[0_28px_90px_rgba(15,23,42,0.08)] lg:flex-row lg:items-end lg:justify-between">
 				<div className="space-y-3">
 					<div className="inline-flex rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white">
@@ -103,6 +109,6 @@ function MyLibraryPage() {
 					)}
 				</div>
 			</div>
-		</div>
+		</motion.div>
 	);
 }

@@ -1,8 +1,9 @@
 import { useState, useTransition } from "react";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { WandSparkles } from "lucide-react";
+import { Loader2, WandSparkles } from "lucide-react";
 import toast from "react-hot-toast";
 import { useServerFn } from "@tanstack/react-start";
+import { motion } from "framer-motion";
 import { Button } from "~/components/ui/button";
 import { createStoryFn, getViewerFn } from "~/features/stories/story.functions";
 import { seo } from "~/utils/seo";
@@ -42,7 +43,12 @@ function CreateStoryPage() {
 	});
 
 	return (
-		<div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+		<motion.div
+			initial={{ opacity: 0, y: 24 }}
+			animate={{ opacity: 1, y: 0 }}
+			transition={{ duration: 0.5 }}
+			className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.9fr_1.1fr]"
+		>
 			<section className="space-y-5 rounded-[32px] border border-white/70 bg-white/80 p-7 shadow-[0_28px_90px_rgba(15,23,42,0.08)]">
 				<div
 					className={`inline-flex rounded-full px-4 py-2 text-sm font-medium ${
@@ -222,14 +228,19 @@ function CreateStoryPage() {
 						disabled={isPending}
 						className="h-13 rounded-full bg-slate-900 px-7 text-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
 					>
-						{isPending
-							? "Menyusun cerita..."
-							: hasFreeQuota
-								? "Generate Cerita Gratis"
-								: "Bayar Rp7.000 & Generate Cerita Premium"}
+						{isPending ? (
+							<>
+								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+								Menyusun cerita...
+							</>
+						) : hasFreeQuota ? (
+							"Buat cerita"
+						) : (
+							"Bayar Rp7.000 & Generate Cerita Premium"
+						)}
 					</Button>
 				</form>
 			</section>
-		</div>
+		</motion.div>
 	);
 }

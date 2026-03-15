@@ -45,7 +45,7 @@ function LandingPage() {
 				>
 					<div className="space-y-5">
 						<p className="font-heading text-5xl leading-[1.02] text-slate-900 sm:text-6xl">
-							Buat cerita yang terasa dibuat khusus untuk Si Kecil
+							Buat cerita yang dekat dengan dunia Si Kecil
 						</p>
 						<p className="max-w-2xl text-lg leading-8 text-slate-600">
 							Cukup masukkan nama anak, pilih usia dan tema. Alkisah akan langsung menyusun cerita
@@ -162,7 +162,7 @@ function LandingPage() {
 			<section className="grid gap-6 rounded-[32px] border border-slate-900/5 bg-slate-900 px-6 py-8 text-white shadow-[0_34px_100px_rgba(15,23,42,0.22)] lg:grid-cols-[0.9fr_1.1fr] lg:px-10">
 				<div className="space-y-4">
 					<p className="font-heading text-3xl">Terinspirasi dari Teori Perkembangan Anak</p>
-					<p className="text-sm leading-7 text-slate-300">
+					<p className="leading-7 text-slate-300">
 						Cerita dibuat dengan mempertimbangkan tahap perkembangan anak berdasarkan usia,
 						mengikuti panduan dari teori psikologi populer.
 					</p>

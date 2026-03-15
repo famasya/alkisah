@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Brain, BookOpen, Lightbulb, Image, Heart } from "lucide-react";
+import { Brain, BookOpen, Lightbulb, Image, Heart, ExternalLink } from "lucide-react";
 import { Button } from "~/components/ui/button";
+import { cn } from "~/lib/utils";
 import { seo } from "~/utils/seo";
 
 const methodologySections = [
 	{
 		title: "Teori Perkembangan Piaget",
+		link: "https://id.wikipedia.org/wiki/Teori_perkembangan_kognitif",
 		icon: Brain,
 		description:
 			"Teori ini menjadi inspirasi umum untuk menyesuaikan tingkat kesederhanaan cerita menurut usia, bukan pemetaan tahap yang diterapkan secara kaku.",
@@ -35,6 +37,7 @@ const methodologySections = [
 	},
 	{
 		title: "Zona Perkembangan Proksimal (Vygotsky)",
+		link: "https://id.wikipedia.org/wiki/Zona_perkembangan_proksimal",
 		icon: Lightbulb,
 		description:
 			"Konsep ini menginspirasi kami untuk menjaga cerita tetap mudah diikuti sambil sesekali mengenalkan ide baru lewat konteks yang ramah anak.",
@@ -72,6 +75,7 @@ const methodologySections = [
 	},
 	{
 		title: "Perkembangan Moral (Kohlberg)",
+		link: "https://id.wikipedia.org/wiki/Tahap_perkembangan_moral_Kohlberg",
 		icon: Heart,
 		description:
 			"Kerangka ini menjadi pengingat untuk menjaga pelajaran emosional tetap sederhana, jelas, dan dekat dengan pengalaman anak kecil.",
@@ -123,7 +127,7 @@ function MethodologyPage() {
 				<div className="grid gap-8 lg:grid-cols-3">
 					<div className="space-y-4 lg:col-span-2">
 						<h2 className="font-heading text-2xl">Pedoman Penulisan Cerita Anak</h2>
-						<p className="text-sm leading-7 text-slate-300">
+						<p className="leading-7 text-slate-300">
 							Berikut beberapa pendekatan yang kami pakai sebagai arah umum saat menyusun cerita,
 							ritme narasi, dan hubungan antara teks dengan ilustrasi:
 						</p>
@@ -160,8 +164,25 @@ function MethodologyPage() {
 								<section.icon className="size-5" />
 							</div>
 							<div className="flex-1 space-y-4">
-								<h2 className="font-heading text-2xl text-slate-900">{section.title}</h2>
-								<p className="text-sm leading-7 text-slate-600">{section.description}</p>
+								<h2 className="font-heading text-2xl text-slate-900">
+									<a
+										href={section.link}
+										target="_blank"
+										className={cn(
+											section.link &&
+												"underline decoration-slate-900 decoration-dotted underline-offset-4",
+										)}
+										rel="noopener noreferrer"
+									>
+										{section.title}
+										{section.link && (
+											<span className="ml-2 text-slate-700">
+												<ExternalLink className="inline size-4" />
+											</span>
+										)}
+									</a>
+								</h2>
+								<p className="leading-7 text-slate-600">{section.description}</p>
 
 								{/* Piaget Table */}
 								{section.details && (
@@ -190,7 +211,7 @@ function MethodologyPage() {
 												</tbody>
 											</table>
 										</div>
-										<p className="text-xs text-slate-500">
+										<p className="text-sm text-slate-500">
 											Contoh: Buku gambar untuk usia 3-5 tahun sering terinspirasi oleh
 											<strong> pengulangan dan struktur yang dapat diprediksi</strong> karena anak
 											di rentang usia ini biasanya terbantu oleh pengenalan pola.
@@ -202,7 +223,7 @@ function MethodologyPage() {
 								{section.points && (
 									<ul className="mt-3 space-y-2">
 										{section.points.map((point) => (
-											<li key={point} className="flex items-start gap-2 text-sm text-slate-600">
+											<li key={point} className="flex items-start gap-2 text-slate-600">
 												<span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-sky-500" />
 												{point}
 											</li>
@@ -221,7 +242,7 @@ function MethodologyPage() {
 												<span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-medium text-white">
 													{i + 1}
 												</span>
-												<span className="text-sm text-slate-700">{step}</span>
+												<span className="text-slate-700">{step}</span>
 											</div>
 										))}
 									</div>
@@ -236,7 +257,7 @@ function MethodologyPage() {
 												className="rounded-[16px] border border-slate-200 bg-white px-4 py-3"
 											>
 												<p className="font-medium text-slate-900">{t.type}</p>
-												<p className="text-sm text-slate-600">{t.desc}</p>
+												<p className="text-slate-600">{t.desc}</p>
 											</div>
 										))}
 									</div>
@@ -248,7 +269,7 @@ function MethodologyPage() {
 										{section.features.map((feature) => (
 											<span
 												key={feature}
-												className="rounded-full bg-sky-100 px-3 py-1.5 text-xs font-medium text-sky-700"
+												className="rounded-full bg-sky-100 text-sm px-3 py-1.5 text-sky-700"
 											>
 												{feature}
 											</span>

@@ -17,14 +17,11 @@ function AuthButtons() {
 
 	return (
 		<>
-			<Button asChild variant="ghost" className="hidden rounded-full md:inline-flex">
-				<Link to="/sign-in">Masuk</Link>
-			</Button>
 			<Button
 				asChild
 				className="rounded-full bg-slate-900 text-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
 			>
-				<Link to="/sign-up">Mulai Gratis</Link>
+				<Link to="/sign-in">Masuk</Link>
 			</Button>
 		</>
 	);
@@ -45,24 +42,46 @@ function Navigation() {
 	return (
 		<>
 			<nav className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
-				<Link to="/" className="transition hover:text-slate-900">
+				<Link
+					to="/"
+					className="rounded-md px-3 py-1"
+					activeProps={{
+						className: "text-slate-900 font-semibold bg-orange-500/10",
+					}}
+				>
 					Beranda
 				</Link>
-				<Link to="/methodology" className="transition hover:text-slate-900">
+				<Link
+					to="/methodology"
+					className="rounded-md px-3 py-1"
+					activeProps={{
+						className: "text-slate-900 font-semibold bg-orange-500/10",
+					}}
+				>
 					Metodologi
 				</Link>
-				<Link to="/create" className="transition hover:text-slate-900">
+				<Link
+					to="/create"
+					className="rounded-md px-3 py-1"
+					activeProps={{ className: "text-slate-900 font-semibold bg-orange-500/10" }}
+				>
 					Buat Cerita
 				</Link>
 				<Link
 					to="/library"
+					className="rounded-md px-3 py-1"
 					search={{ sort: "newest", page: 1 }}
-					className="transition hover:text-slate-900"
+					activeProps={{ className: "text-slate-900 font-semibold bg-orange-500/10" }}
 				>
 					Pustaka Publik
 				</Link>
 				{isLoaded && isSignedIn ? (
-					<Link to="/my-library" search={{ page: 1 }} className="transition hover:text-slate-900">
+					<Link
+						to="/my-library"
+						search={{ page: 1 }}
+						className="rounded-md px-3 py-1"
+						activeProps={{ className: "text-slate-900 font-semibold bg-orange-500/10" }}
+					>
 						Cerita Saya
 					</Link>
 				) : null}
@@ -91,7 +110,10 @@ function Navigation() {
 												? { page: 1 }
 												: undefined
 									}
-									className="rounded-lg px-3 py-2 transition hover:bg-slate-100 hover:text-slate-900"
+									className={`rounded-lg px-3 py-2 transition hover:bg-slate-100 hover:text-slate-900`}
+									activeProps={{
+										className: "bg-orange-500/20 text-slate-900",
+									}}
 									onClick={() => setIsOpen(false)}
 								>
 									{link.label}
