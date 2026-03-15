@@ -493,14 +493,13 @@ function StoryDetailPage() {
 								<p
 									className={`font-heading text-3xl ${nightMode ? "text-slate-50" : "text-slate-900"}`}
 								>
-									Buka audio penuh dan fitur publik.
+									Buat narasi premium dan bagikan cerita Anda
 								</p>
 								<p
 									className={`text-sm leading-7 ${nightMode ? "text-slate-300" : "text-slate-600"}`}
 								>
-									Pembayaran Rp7.000 akan dibawa ke checkout Mayar. Setelah pembayaran berhasil,
-									audio premium tetap dibuat manual per bagian saat Anda butuh, dan cerita bisa
-									dipublikasikan kapan saja.
+									Buat audio narasi yang natural untuk cerita Anda. Bayar sekali, akses tanpa batas.
+									Anda juga dapat berbagi cerita Anda untuk dibaca oleh pembaca lain.
 								</p>
 							</div>
 							<form
@@ -529,7 +528,7 @@ function StoryDetailPage() {
 									<span
 										className={`text-sm font-medium ${nightMode ? "text-slate-300" : "text-slate-700"}`}
 									>
-										Akun untuk invoice
+										Identitas Anda
 									</span>
 									<div
 										className={`rounded-2xl border px-4 py-3 text-sm leading-7 ${
@@ -546,7 +545,7 @@ function StoryDetailPage() {
 									<span
 										className={`text-sm font-medium ${nightMode ? "text-slate-300" : "text-slate-700"}`}
 									>
-										Nomor HP untuk Mayar
+										Nomor HP (untuk pembayaran Mayar)
 									</span>
 									<input
 										required
