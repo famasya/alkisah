@@ -12,7 +12,11 @@ export type StoryStatus = (typeof storyStatuses)[number];
 export type StoryPart = {
 	order: number;
 	narrations: string[];
+	illustrationStatus: "queued" | "generating" | "generated" | "failed";
+	illustrationFailureReason?: string;
 	illustrationUrl?: string;
+	voiceStatus: "queued" | "generating" | "generated" | "failed";
+	voiceFailureReason?: string;
 	voiceUrl?: string;
 };
 

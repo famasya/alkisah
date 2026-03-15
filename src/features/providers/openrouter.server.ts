@@ -4,6 +4,7 @@ import type { CreateStoryInput } from "../stories/story.schemas";
 
 type StoryGenerationResult = {
 	title: string;
+	characterGuide: string;
 	parts: Array<{
 		order: number;
 		narrations: string[];
@@ -67,17 +68,17 @@ export async function generateStoryDraft(input: CreateStoryInput): Promise<Story
 	const payload = await getClient().chat.send({
 		chatGenerationParams: {
 			model: requireEnv("OPENROUTER_TEXT_MODEL"),
-			temperature: 0.9,
+			temperature: 0.85,
 			responseFormat: { type: "json_object" },
 			messages: [
 				{
 					role: "system",
 					content:
-						'You write warm Indonesian children\'s stories in Bahasa Indonesia. Follow child-development storytelling principles from the provided guideline: one core idea, complementary picture-text moments, a clear emotional arc, one simple challenge, gentle scaffolding, and a kind moral resolution. For younger readers use predictable rhythm, repetition, and concrete imagery. Respond with strict JSON only using this schema: {"title": string, "parts": [{"order": number, "narrations": string[3|4], "illustrationPrompt": string}]}. Return exactly 4 parts. Each narrations array must contain 3 or 4 short Indonesian sentences. Each illustrationPrompt must be one English sentence for a whimsical pastel storybook illustration that keeps the child character visually consistent across all parts, adds complementary visual details beyond the narration, and clearly describes setting, mood, action, and recurring outfit or visual anchors.',
+						'You write warm Indonesian children\'s bedtime stories in Bahasa Indonesia. Use the children-story guideline explicitly: align the plot to the child\'s developmental stage, introduce only one new concept at a time, use a simplified story grammar with character introduction, problem, attempts, obstacle, resolution, and emotional lesson, and rely on complementary picture-text storytelling. For ages 3-6 favor repetition, rhythm, concrete imagery, fantasy, empathy, and very clear consequences. For ages 7-10 keep the plot logical, gentle, and easy to follow. Respond with strict JSON only using this schema: {"title": string, "characterGuide": string, "parts": [{"order": number, "narrations": string[3|4], "illustrationPrompt": string}]}. Return exactly 4 parts. Target roughly 380-460 words in total, aiming close to 400 words. The characterGuide must be one concise English sentence describing the child protagonist with stable age, hairstyle, face shape, skin tone, recurring pajamas or outfit, and one memorable accessory so the same wording can be reused for every image. Each narrations array must contain 3 or 4 short Indonesian sentences. Keep one child protagonist consistently named, one helper figure at most, one central challenge, and a soft moral ending. Each illustrationPrompt must be one English sentence for a whimsical pastel storybook illustration that keeps the child character visually consistent across all parts, adds complementary visual details beyond the narration, and clearly describes setting, mood, action, and recurring outfit or visual anchors. Use the exact same character terms as the characterGuide and prioritize character consistency over background details.',
 				},
 				{
 					role: "user",
-					content: `Nama anak: ${input.childName}\nUsia: ${input.age}\nTema: ${themeDetail}\nArahan usia: ${ageDirection}\nTulis cerita personal dalam Bahasa Indonesia sebagai 4 bagian berurutan. Pastikan keseluruhan cerita sekitar 400-800 kata, hangat, visual, lembut, dan cocok dibacakan sebelum tidur.`,
+					content: `Nama anak: ${input.childName}\nUsia: ${input.age}\nTema: ${themeDetail}\nArahan usia: ${ageDirection}\nTulis cerita personal dalam Bahasa Indonesia sebagai 4 bagian berurutan. Targetkan total cerita sekitar 400 kata, tetap hangat, visual, lembut, dan cocok dibacakan sebelum tidur.`,
 				},
 			],
 		},
@@ -85,12 +86,18 @@ export async function generateStoryDraft(input: CreateStoryInput): Promise<Story
 	const rawContent = normalizeMessageContent(payload.choices[0]?.message?.content);
 	const parsed = JSON.parse(extractJsonBlock(rawContent)) as Partial<StoryGenerationResult>;
 
-	if (!parsed.title || !Array.isArray(parsed.parts) || parsed.parts.length < 4) {
+	if (
+		!parsed.title ||
+		!parsed.characterGuide ||
+		!Array.isArray(parsed.parts) ||
+		parsed.parts.length < 4
+	) {
 		throw new Error("OpenRouter returned an incomplete story payload");
 	}
 
 	return {
 		title: parsed.title.trim(),
+		characterGuide: parsed.characterGuide.trim(),
 		parts: parsed.parts.slice(0, 4).map((part, index) => ({
 			order: typeof part?.order === "number" ? part.order : index + 1,
 			narrations: Array.isArray(part?.narrations)
@@ -127,7 +134,7 @@ function extractImageSource(content: unknown, imageUrl: string | undefined) {
 	throw new Error("OpenRouter did not return an illustration URL");
 }
 
-export async function generateIllustration(prompt: string) {
+export async function generateIllustration(prompt: string, characterGuide?: string) {
 	const payload = await getClient().chat.send({
 		chatGenerationParams: {
 			model: requireEnv("OPENROUTER_IMAGE_MODEL"),
@@ -137,7 +144,10 @@ export async function generateIllustration(prompt: string) {
 					role: "user",
 					content:
 						`Create one square illustrated children's book image in a warm pastel storybook style. ` +
-						`Keep the child character design consistent with the story context and avoid text, logos, watermarks, or split panels. ${prompt}`,
+						`Keep the main child character identical across scenes with the same face, hair, body proportions, outfit details, and accessory. ` +
+						`Use exactly the same character wording every time and prioritize character consistency over background changes. ` +
+						`Avoid text, logos, watermarks, split panels, or extra protagonist variants. ` +
+						`${characterGuide ? `Character guide: ${characterGuide}. ` : ""}${prompt}`,
 				},
 			],
 		},

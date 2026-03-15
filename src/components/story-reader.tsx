@@ -6,10 +6,20 @@ import type { StoryDetail } from "~/features/stories/story.types";
 type StoryReaderProps = {
 	story: StoryDetail;
 	isPublic?: boolean;
+	audioGenerationIndex?: number | null;
+	nightMode?: boolean;
+	onGenerateAudio?: (index: number) => void;
+	onToggleNightMode?: () => void;
 };
 
-export function StoryReader({ story, isPublic = false }: StoryReaderProps) {
-	const [nightMode, setNightMode] = useState(false);
+export function StoryReader({
+	story,
+	isPublic = false,
+	audioGenerationIndex = null,
+	nightMode = false,
+	onGenerateAudio,
+	onToggleNightMode,
+}: StoryReaderProps) {
 	const [speakingOrder, setSpeakingOrder] = useState<number | null>(null);
 
 	const stopPreview = useEffectEvent(() => {
@@ -65,7 +75,7 @@ export function StoryReader({ story, isPublic = false }: StoryReaderProps) {
 					className="rounded-full"
 					onClick={() => {
 						stopPreview();
-						setNightMode((value) => !value);
+						onToggleNightMode?.();
 					}}
 				>
 					<MoonStar className="size-4" />
@@ -77,6 +87,7 @@ export function StoryReader({ story, isPublic = false }: StoryReaderProps) {
 				{story.parts.map((part) => {
 					const canUsePaidAudio = story.canListenToPaidAudio && part.voiceUrl;
 					const isSpeaking = speakingOrder === part.order;
+					const isGeneratingAudio = audioGenerationIndex === part.order - 1;
 
 					return (
 						<article
@@ -96,8 +107,25 @@ export function StoryReader({ story, isPublic = false }: StoryReaderProps) {
 										className="aspect-[4/3] h-full w-full object-cover"
 									/>
 								) : (
-									<div className="flex aspect-[4/3] items-center justify-center">
+									<div className="flex aspect-[4/3] flex-col items-center justify-center gap-4 px-6 text-center">
 										<Volume2 className="size-8 opacity-60" />
+										<div className="w-full max-w-xs space-y-2">
+											<p className="text-sm font-medium text-slate-700">
+												{part.illustrationStatus === "failed"
+													? "Ilustrasi gagal dibuat"
+													: "Ilustrasi sedang dibuat"}
+											</p>
+											<div className="h-2 overflow-hidden rounded-full bg-white/70">
+												<div
+													className={`h-full rounded-full bg-slate-900 transition-all duration-500 ${
+														part.illustrationStatus === "generating" ? "w-2/3" : "w-1/4"
+													}`}
+												/>
+											</div>
+											{part.illustrationFailureReason ? (
+												<p className="text-xs text-rose-600">{part.illustrationFailureReason}</p>
+											) : null}
+										</div>
 									</div>
 								)}
 							</div>
@@ -127,7 +155,11 @@ export function StoryReader({ story, isPublic = false }: StoryReaderProps) {
 										<Button
 											type="button"
 											variant="outline"
-											className="rounded-full"
+											className={`rounded-full ${
+												nightMode
+													? "border-slate-600 bg-slate-800 text-slate-100 hover:bg-slate-700 hover:text-white"
+													: ""
+											}`}
 											onClick={() => {
 												if (isSpeaking) {
 													stopPreview();
@@ -153,6 +185,27 @@ export function StoryReader({ story, isPublic = false }: StoryReaderProps) {
 										>
 											Unduh audio bagian ini
 										</a>
+									) : story.isPaid && onGenerateAudio ? (
+										<>
+											<Button
+												type="button"
+												variant="outline"
+												disabled={isGeneratingAudio || part.voiceStatus === "generating"}
+												className="rounded-full"
+												onClick={() => {
+													onGenerateAudio(part.order - 1);
+												}}
+											>
+												{isGeneratingAudio || part.voiceStatus === "generating"
+													? "Membuat audio..."
+													: "Generate Audio"}
+											</Button>
+											<p className={`text-sm ${nightMode ? "text-slate-400" : "text-slate-500"}`}>
+												{part.voiceFailureReason
+													? part.voiceFailureReason
+													: "Buat audio premium untuk bagian ini saat diperlukan."}
+											</p>
+										</>
 									) : (
 										<p className={`text-sm ${nightMode ? "text-slate-400" : "text-slate-500"}`}>
 											Audio penuh terbuka setelah pembayaran.

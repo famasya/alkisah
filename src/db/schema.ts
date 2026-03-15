@@ -3,8 +3,13 @@ import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 export type StoryPartRecord = {
 	order: number;
 	narrations: string[];
+	characterGuide?: string;
 	illustrationPrompt: string;
+	illustrationStatus?: "queued" | "generating" | "generated" | "failed";
+	illustrationFailureReason?: string;
 	illustrationKey?: string;
+	voiceStatus?: "queued" | "generating" | "generated" | "failed";
+	voiceFailureReason?: string;
 	voiceKey?: string;
 };
 

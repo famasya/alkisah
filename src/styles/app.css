@@ -103,4 +103,57 @@
 	::selection {
 		background: rgba(246, 120, 62, 0.18);
 	}
+
+	html.story-night-mode body,
+	body.story-night-mode {
+		background: #020617 !important;
+		color: #e2e8f0;
+	}
+
+	html.story-night-mode .site-shell,
+	body.story-night-mode .site-shell {
+		background-color: #020617 !important;
+		background-image:
+			radial-gradient(circle at top left, rgba(251, 146, 60, 0.12), transparent 24%),
+			radial-gradient(circle at top right, rgba(56, 189, 248, 0.12), transparent 28%),
+			linear-gradient(180deg, #020617 0%, #020817 45%, #020617 100%) !important;
+		color: #e2e8f0;
+	}
+
+	html.story-night-mode .site-shell-grid,
+	body.story-night-mode .site-shell-grid {
+		background-image:
+			linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+			linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px) !important;
+		opacity: 1;
+	}
+
+	html.story-night-mode .site-shell-header,
+	body.story-night-mode .site-shell-header {
+		border-color: rgba(51, 65, 85, 0.9) !important;
+		background: rgba(2, 6, 23, 0.82) !important;
+	}
+
+	html.story-night-mode .site-shell-footer,
+	body.story-night-mode .site-shell-footer {
+		border-color: rgba(51, 65, 85, 0.9) !important;
+	}
+
+	html.story-night-mode .site-shell-header p,
+	html.story-night-mode .site-shell-header a,
+	html.story-night-mode .site-shell-footer,
+	body.story-night-mode .site-shell-header p,
+	body.story-night-mode .site-shell-header a,
+	body.story-night-mode .site-shell-footer {
+		color: #e2e8f0;
+	}
+
+	html.story-night-mode .site-shell-header .text-slate-500,
+	html.story-night-mode .site-shell-header .text-slate-600,
+	html.story-night-mode .site-shell-footer,
+	body.story-night-mode .site-shell-header .text-slate-500,
+	body.story-night-mode .site-shell-header .text-slate-600,
+	body.story-night-mode .site-shell-footer {
+		color: #94a3b8;
+	}
 }

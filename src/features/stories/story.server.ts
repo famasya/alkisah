@@ -155,6 +155,9 @@ async function serializeStory(row: typeof schema.stories.$inferSelect): Promise<
 		row.parts.map(async (part, index) => ({
 			order: part.order,
 			narrations: part.narrations,
+			illustrationStatus:
+				part.illustrationStatus ?? (part.illustrationKey ? "generated" : "queued"),
+			illustrationFailureReason: part.illustrationFailureReason,
 			illustrationUrl: part.illustrationKey
 				? await createSignedMediaUrl({
 						storyId: row.id,
@@ -163,6 +166,8 @@ async function serializeStory(row: typeof schema.stories.$inferSelect): Promise<
 						key: part.illustrationKey,
 					})
 				: undefined,
+			voiceStatus: part.voiceStatus ?? (part.voiceKey ? "generated" : "queued"),
+			voiceFailureReason: part.voiceFailureReason,
 			voiceUrl: part.voiceKey
 				? await createSignedMediaUrl({
 						storyId: row.id,
@@ -286,30 +291,16 @@ export async function createStory(input: CreateStoryInput) {
 	});
 
 	try {
-		const { generateIllustration, generateStoryDraft } =
-			await import("../providers/openrouter.server");
+		const { generateStoryDraft } = await import("../providers/openrouter.server");
 		const generated = await generateStoryDraft(input);
-		const illustrationData = await Promise.all(
-			generated.parts.map((part) => generateIllustration(part.illustrationPrompt)),
-		);
-		const parts: StoryPartRecord[] = [];
-
-		for (const [index, imageSource] of illustrationData.entries()) {
-			const { buffer, contentType } = await resolveGeneratedImage(imageSource);
-			const extension = contentType.includes("png")
-				? "png"
-				: contentType.includes("webp")
-					? "webp"
-					: "jpg";
-			const key = `stories/${storyId}/images/${index}.${extension}`;
-			await uploadBinaryObject(key, buffer, contentType);
-			parts.push({
-				order: generated.parts[index]?.order ?? index + 1,
-				narrations: generated.parts[index]?.narrations ?? [],
-				illustrationPrompt: generated.parts[index]?.illustrationPrompt ?? "",
-				illustrationKey: key,
-			});
-		}
+		const parts: StoryPartRecord[] = generated.parts.map((part, index) => ({
+			order: generated.parts[index]?.order ?? index + 1,
+			narrations: generated.parts[index]?.narrations ?? [],
+			characterGuide: generated.characterGuide,
+			illustrationPrompt: generated.parts[index]?.illustrationPrompt ?? "",
+			illustrationStatus: "queued",
+			voiceStatus: "queued",
+		}));
 
 		const fullContent = buildStoryContent(parts);
 
@@ -319,7 +310,7 @@ export async function createStory(input: CreateStoryInput) {
 				title: generated.title,
 				content: fullContent,
 				parts,
-				coverImageKey: parts[0]?.illustrationKey,
+				coverImageKey: null,
 				previewExcerpt: trimPreview(fullContent),
 				status: "generated",
 				updatedAt: now(),
@@ -407,6 +398,91 @@ export async function listPublicStories(query: LibraryQueryInput): Promise<Story
 	};
 }
 
+function getNextQueuedIllustrationIndex(parts: StoryPartRecord[]) {
+	return parts.findIndex(
+		(part) =>
+			!part.illustrationKey &&
+			(part.illustrationStatus === "queued" || part.illustrationStatus === "generating"),
+	);
+}
+
+export async function processStoryIllustrations(storyId: string) {
+	const userId = await requireUserId();
+	const db = getDb();
+	const story = await getOwnedStoryRow(storyId, userId);
+
+	if (!story) {
+		throw new Error("Cerita tidak ditemukan.");
+	}
+
+	const illustrationIndex = getNextQueuedIllustrationIndex(story.parts);
+	if (illustrationIndex < 0) {
+		return await serializeStory(story);
+	}
+
+	const parts = [...story.parts];
+	parts[illustrationIndex] = {
+		...parts[illustrationIndex]!,
+		illustrationStatus: "generating",
+		illustrationFailureReason: undefined,
+	};
+	await db
+		.update(schema.stories)
+		.set({
+			parts,
+			updatedAt: now(),
+		})
+		.where(eq(schema.stories.id, story.id));
+
+	try {
+		const { generateIllustration } = await import("../providers/openrouter.server");
+		const imageSource = await generateIllustration(
+			parts[illustrationIndex]?.illustrationPrompt ?? "",
+			parts[illustrationIndex]?.characterGuide,
+		);
+		const { buffer, contentType } = await resolveGeneratedImage(imageSource);
+		const extension = contentType.includes("png")
+			? "png"
+			: contentType.includes("webp")
+				? "webp"
+				: "jpg";
+		const key = `stories/${story.id}/images/${illustrationIndex}.${extension}`;
+		await uploadBinaryObject(key, buffer, contentType);
+		parts[illustrationIndex] = {
+			...parts[illustrationIndex]!,
+			illustrationKey: key,
+			illustrationStatus: "generated",
+			illustrationFailureReason: undefined,
+		};
+	} catch (error) {
+		parts[illustrationIndex] = {
+			...parts[illustrationIndex]!,
+			illustrationStatus: "failed",
+			illustrationFailureReason:
+				error instanceof Error ? error.message : "Unknown illustration error",
+		};
+	}
+
+	await db
+		.update(schema.stories)
+		.set({
+			parts,
+			coverImageKey:
+				illustrationIndex === 0
+					? (parts[illustrationIndex]?.illustrationKey ?? null)
+					: story.coverImageKey,
+			updatedAt: now(),
+		})
+		.where(eq(schema.stories.id, story.id));
+
+	const refreshed = await getOwnedStoryRow(story.id, userId);
+	if (!refreshed) {
+		throw new Error("Cerita tidak ditemukan.");
+	}
+
+	return await serializeStory(refreshed);
+}
+
 export async function createPaymentLinkForStory(input: PaymentRequestInput) {
 	const userId = await requireUserId();
 	const db = getDb();
@@ -480,7 +556,21 @@ export async function createPaymentLinkForStory(input: PaymentRequestInput) {
 	return { paymentLink: payment.paymentLink };
 	*/
 
-	await finalizeStoryPayment(story.id);
+	const paidAt = now();
+	await db
+		.update(schema.stories)
+		.set({
+			parts: story.parts.map((part) => ({
+				...part,
+				voiceStatus: part.voiceKey ? "generated" : "queued",
+				voiceFailureReason: undefined,
+			})),
+			isPaid: true,
+			status: "paid",
+			paidAt,
+			updatedAt: paidAt,
+		})
+		.where(eq(schema.stories.id, story.id));
 
 	return {
 		paymentLink: `${getAppUrl()}/stories/${story.id}?payment=success`,
@@ -509,7 +599,10 @@ export async function setStoryPublicState(input: StoryPublicInput) {
 		throw new Error("Cerita tidak ditemukan.");
 	}
 
-	if (!story.isPaid || !story.parts.every((part) => part.voiceKey)) {
+	if (
+		!story.isPaid ||
+		!story.parts.every((part) => part.voiceKey && part.voiceStatus === "generated")
+	) {
 		throw new Error("Cerita harus sudah dibayar dan punya audio penuh sebelum dipublikasikan.");
 	}
 
@@ -533,53 +626,75 @@ export async function setStoryPublicState(input: StoryPublicInput) {
 	};
 }
 
-async function finalizeStoryPayment(storyId: string) {
+export async function generateStoryPartAudio(storyId: string, index: number) {
+	const userId = await requireUserId();
 	const db = getDb();
-	const story = await db.query.stories.findFirst({
-		where: eq(schema.stories.id, storyId),
-	});
+	const story = await getOwnedStoryRow(storyId, userId);
 
 	if (!story) {
-		throw new Error("Story not found for payment finalization");
+		throw new Error("Cerita tidak ditemukan.");
 	}
 
-	if (story.isPaid && story.parts.every((part) => part.voiceKey)) {
-		return story;
+	if (!story.isPaid) {
+		throw new Error("Audio premium baru bisa dibuat setelah unlock.");
 	}
 
-	const { generateStoryAudio } = await import("../providers/elevenlabs.server");
-	const paidParts: StoryPartRecord[] = [];
-	for (const [index, part] of story.parts.entries()) {
-		const audioBuffer = await generateStoryAudio(part.narrations.join(" "));
-		const audioKey = `stories/${story.id}/audio/${index}.mp3`;
-		await uploadBinaryObject(audioKey, audioBuffer, "audio/mpeg");
-		paidParts.push({
-			...part,
-			voiceKey: audioKey,
-		});
+	const part = story.parts[index];
+	if (!part) {
+		throw new Error("Bagian cerita tidak ditemukan.");
 	}
 
-	const paidAt = now();
+	if (part.voiceKey && part.voiceStatus === "generated") {
+		return await serializeStory(story);
+	}
+
+	const parts = [...story.parts];
+	parts[index] = {
+		...part,
+		voiceStatus: "generating",
+		voiceFailureReason: undefined,
+	};
 	await db
 		.update(schema.stories)
 		.set({
-			parts: paidParts,
-			isPaid: true,
-			status: "paid",
-			paidAt,
-			updatedAt: paidAt,
+			parts,
+			updatedAt: now(),
 		})
 		.where(eq(schema.stories.id, story.id));
 
-	const refreshed = await db.query.stories.findFirst({
-		where: eq(schema.stories.id, story.id),
-	});
-
-	if (!refreshed) {
-		throw new Error("Story not found after payment finalization");
+	try {
+		const { generateStoryAudio } = await import("../providers/elevenlabs.server");
+		const audioBuffer = await generateStoryAudio(part.narrations.join(" "));
+		const audioKey = `stories/${story.id}/audio/${index}.mp3`;
+		await uploadBinaryObject(audioKey, audioBuffer, "audio/mpeg");
+		parts[index] = {
+			...parts[index]!,
+			voiceKey: audioKey,
+			voiceStatus: "generated",
+			voiceFailureReason: undefined,
+		};
+	} catch (error) {
+		parts[index] = {
+			...parts[index]!,
+			voiceStatus: "failed",
+			voiceFailureReason: error instanceof Error ? error.message : "Unknown audio error",
+		};
 	}
 
-	return refreshed;
+	await db
+		.update(schema.stories)
+		.set({
+			parts,
+			updatedAt: now(),
+		})
+		.where(eq(schema.stories.id, story.id));
+
+	const refreshed = await getOwnedStoryRow(story.id, userId);
+	if (!refreshed) {
+		throw new Error("Cerita tidak ditemukan.");
+	}
+
+	return await serializeStory(refreshed);
 }
 
 /*

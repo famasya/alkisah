@@ -28,6 +28,10 @@ export const storyIdSchema = z.object({
 	storyId: z.string().trim().min(1),
 });
 
+export const storyPartAudioSchema = storyIdSchema.extend({
+	index: z.coerce.number().int().min(0),
+});
+
 export const publicStorySchema = z.object({
 	slug: z.string().trim().min(1),
 });
@@ -49,3 +53,4 @@ export type CreateStoryInput = z.infer<typeof createStorySchema>;
 export type PaymentRequestInput = z.infer<typeof paymentRequestSchema>;
 export type StoryPublicInput = z.infer<typeof storyPublicSchema>;
 export type LibraryQueryInput = z.infer<typeof libraryQuerySchema>;
+export type StoryPartAudioInput = z.infer<typeof storyPartAudioSchema>;

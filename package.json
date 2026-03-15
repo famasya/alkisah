@@ -13,6 +13,7 @@
 		"lint": "bunx oxlint --fix . && bunx oxfmt --write .",
 		"lint:check": "bunx oxlint . && bunx oxfmt --check .",
 		"format": "bunx oxfmt --write .",
+		"typecheck": "tsc --noEmit",
 		"cf-typegen": "wrangler types",
 		"postinstall": "npm run cf-typegen"
 	},
