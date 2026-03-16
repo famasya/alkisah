@@ -10,6 +10,7 @@ type StoryReaderProps = {
 	imageRetryIndex?: number | null;
 	nightMode?: boolean;
 	readingMode?: boolean;
+	voiceMode?: boolean;
 	regenerationIndex?: number | null;
 	regenerationPrompts?: Record<number, string>;
 	onGenerateAudio?: (index: number) => void;
@@ -18,6 +19,7 @@ type StoryReaderProps = {
 	onRetryIllustration?: (index: number) => void;
 	onToggleNightMode?: () => void;
 	onToggleReadingMode?: () => void;
+	onToggleVoiceMode?: () => void;
 };
 
 export function StoryReader({
@@ -27,6 +29,7 @@ export function StoryReader({
 	imageRetryIndex = null,
 	nightMode = false,
 	readingMode = false,
+	voiceMode = false,
 	regenerationIndex = null,
 	regenerationPrompts = {},
 	onGenerateAudio,
@@ -35,6 +38,7 @@ export function StoryReader({
 	onRetryIllustration,
 	onToggleNightMode,
 	onToggleReadingMode,
+	onToggleVoiceMode,
 }: StoryReaderProps) {
 	const [speakingOrder, setSpeakingOrder] = useState<number | null>(null);
 
@@ -102,6 +106,18 @@ export function StoryReader({
 					) : null}
 					<Button
 						type="button"
+						variant={voiceMode ? "secondary" : "outline"}
+						className="rounded-full"
+						onClick={() => {
+							stopPreview();
+							onToggleVoiceMode?.();
+						}}
+					>
+						<Volume2 className="size-4" />
+						{voiceMode ? "Mode Suara Aktif" : "Mode Suara"}
+					</Button>
+					<Button
+						type="button"
 						variant={nightMode ? "secondary" : "outline"}
 						className="rounded-full"
 						onClick={() => {
@@ -115,7 +131,7 @@ export function StoryReader({
 				</div>
 			</div>
 
-			<div className="space-y-6">
+			<div className="space-y-12">
 				{story.parts.map((part) => {
 					const canUsePaidAudio = story.canListenToPaidAudio && part.voiceUrl;
 					const isSpeaking = speakingOrder === part.order;
@@ -139,7 +155,7 @@ export function StoryReader({
 					return (
 						<article
 							key={part.order}
-							className={`grid gap-5 rounded-[28px] border p-4 sm:grid-cols-[1.2fr_1fr] sm:p-5 ${
+							className={`grid gap-5 rounded-[28px] sm:grid-cols-[1.2fr_1fr] ${
 								nightMode ? "border-slate-800 bg-slate-900/70" : "border-slate-900/5 bg-slate-50/80"
 							}`}
 						>
@@ -193,16 +209,18 @@ export function StoryReader({
 								<div className="inline-flex w-fit rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
 									Bagian {part.order}
 								</div>
-								<div className="space-y-3 text-[15px] leading-7">
-									{part.narrations.map((narration, index) => (
-										<p
-											key={`${part.order}-${index}`}
-											className={nightMode ? "text-slate-200" : "text-slate-700"}
-										>
-											{narration}
-										</p>
-									))}
-								</div>
+								{voiceMode ? null : (
+									<div className="space-y-3 text-[15px] leading-7">
+										{part.narrations.map((narration, index) => (
+											<p
+												key={`${part.order}-${index}`}
+												className={nightMode ? "text-slate-200" : "text-slate-700"}
+											>
+												{narration}
+											</p>
+										))}
+									</div>
+								)}
 								{canRegeneratePart ? (
 									<div
 										className={`rounded-[20px] border p-4 ${

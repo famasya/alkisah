@@ -4,23 +4,31 @@ import toast from "react-hot-toast";
 import { StoryReader } from "~/components/story-reader";
 import { Button } from "~/components/ui/button";
 import { getPublicStoryFn } from "~/features/stories/story.functions";
+import type { StoryDetail } from "~/features/stories/story.types";
 import { seo } from "~/utils/seo";
 
 export const Route = createFileRoute("/s/$slug")({
-	head: () => ({
-		meta: seo({
-			title: "Cerita Publik | Alkisah",
-			description:
-				"Baca cerita publik yang dibuat dengan Alkisah dan dengarkan audionya jika tersedia.",
-		}),
-	}),
+	head: ({ loaderData }) => {
+		const story = loaderData as StoryDetail | undefined;
+
+		return {
+			meta: seo({
+				title: story?.title
+					? `${story.title} | Cerita Publik | Alkisah`
+					: "Cerita Publik | Alkisah",
+				description:
+					"Baca cerita publik yang dibuat dengan Alkisah dan dengarkan audionya jika tersedia.",
+			}),
+		};
+	},
 	loader: ({ params }) => getPublicStoryFn({ data: { slug: params.slug } }),
 	component: PublicStoryPage,
 });
 
 function PublicStoryPage() {
-	const story = Route.useLoaderData();
+	const story = Route.useLoaderData() as StoryDetail;
 	const [nightMode, setNightMode] = useState(false);
+	const [voiceMode, setVoiceMode] = useState(false);
 
 	useEffect(() => {
 		document.documentElement.classList.toggle("story-night-mode", nightMode);
@@ -87,8 +95,12 @@ function PublicStoryPage() {
 				story={story}
 				isPublic
 				nightMode={nightMode}
+				voiceMode={voiceMode}
 				onToggleNightMode={() => {
 					setNightMode((value) => !value);
+				}}
+				onToggleVoiceMode={() => {
+					setVoiceMode((value) => !value);
 				}}
 			/>
 		</div>

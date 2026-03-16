@@ -57,6 +57,7 @@ function StoryDetailPage() {
 	const [imageRetryIndex, setImageRetryIndex] = useState<number | null>(null);
 	const [nightMode, setNightMode] = useState(false);
 	const [readingMode, setReadingMode] = useState(false);
+	const [voiceMode, setVoiceMode] = useState(false);
 	const [regenerationIndex, setRegenerationIndex] = useState<number | null>(null);
 	const [regenerationPrompts, setRegenerationPrompts] = useState<Record<number, string>>({});
 	const [customer, setCustomer] = useState({
@@ -586,6 +587,7 @@ function StoryDetailPage() {
 					imageRetryIndex={imageRetryIndex}
 					nightMode={nightMode}
 					readingMode={readingMode}
+					voiceMode={voiceMode}
 					regenerationIndex={regenerationIndex}
 					regenerationPrompts={regenerationPrompts}
 					onGenerateAudio={(index) => {
@@ -672,7 +674,22 @@ function StoryDetailPage() {
 						setNightMode((value) => !value);
 					}}
 					onToggleReadingMode={() => {
-						setReadingMode((value) => !value);
+						setReadingMode((value) => {
+							const nextValue = !value;
+							if (!nextValue) {
+								setVoiceMode(false);
+							}
+							return nextValue;
+						});
+					}}
+					onToggleVoiceMode={() => {
+						setVoiceMode((value) => {
+							const nextValue = !value;
+							if (nextValue) {
+								setReadingMode(true);
+							}
+							return nextValue;
+						});
 					}}
 				/>
 			) : (
