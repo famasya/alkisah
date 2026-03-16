@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { BookOpenText, MoonStar, PauseCircle, PlayCircle, Volume2 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import type { StoryDetail } from "~/features/stories/story.types";
@@ -41,10 +41,36 @@ export function StoryReader({
 	onToggleVoiceMode,
 }: StoryReaderProps) {
 	const [speakingOrder, setSpeakingOrder] = useState<number | null>(null);
+	const [playingVoiceOrder, setPlayingVoiceOrder] = useState<number | null>(null);
+	const audioRefs = useRef<Record<number, HTMLAudioElement | null>>({});
 
 	const stopPreview = useEffectEvent(() => {
 		window.speechSynthesis?.cancel();
 		setSpeakingOrder(null);
+	});
+
+	const stopVoicePlayback = useEffectEvent(() => {
+		for (const audio of Object.values(audioRefs.current)) {
+			if (!audio) {
+				continue;
+			}
+
+			audio.pause();
+			audio.currentTime = 0;
+		}
+
+		setPlayingVoiceOrder(null);
+	});
+
+	const pauseOtherVoices = useEffectEvent((currentOrder: number) => {
+		for (const [order, audio] of Object.entries(audioRefs.current)) {
+			if (!audio || Number(order) === currentOrder) {
+				continue;
+			}
+
+			audio.pause();
+			audio.currentTime = 0;
+		}
 	});
 
 	const speakPreview = useEffectEvent((order: number, narrations: string[]) => {
@@ -68,11 +94,54 @@ export function StoryReader({
 		window.speechSynthesis.speak(utterance);
 	});
 
+	const playNextVoice = useEffectEvent(async (order: number) => {
+		const nextPart = story.parts.find((part) => part.order > order && part.voiceUrl);
+		if (!voiceMode || !nextPart?.voiceUrl) {
+			setPlayingVoiceOrder(null);
+			return;
+		}
+
+		const nextAudio = audioRefs.current[nextPart.order];
+		if (!nextAudio) {
+			setPlayingVoiceOrder(null);
+			return;
+		}
+
+		try {
+			await nextAudio.play();
+		} catch {
+			setPlayingVoiceOrder(null);
+		}
+	});
+
 	useEffect(() => {
 		return () => {
 			window.speechSynthesis?.cancel();
+			for (const audio of Object.values(audioRefs.current)) {
+				audio?.pause();
+			}
 		};
 	}, []);
+
+	useEffect(() => {
+		if (!voiceMode || !story.canListenToPaidAudio) {
+			return;
+		}
+
+		for (const part of story.parts) {
+			if (!part.voiceUrl) {
+				continue;
+			}
+
+			const audio = audioRefs.current[part.order];
+			if (!audio) {
+				continue;
+			}
+
+			audio.preload = "auto";
+			audio.load();
+		}
+	}, [story.canListenToPaidAudio, story.parts, voiceMode]);
 
 	return (
 		<section
@@ -97,6 +166,7 @@ export function StoryReader({
 							className="rounded-full"
 							onClick={() => {
 								stopPreview();
+								stopVoicePlayback();
 								onToggleReadingMode?.();
 							}}
 						>
@@ -110,6 +180,7 @@ export function StoryReader({
 						className="rounded-full"
 						onClick={() => {
 							stopPreview();
+							stopVoicePlayback();
 							onToggleVoiceMode?.();
 						}}
 					>
@@ -122,6 +193,7 @@ export function StoryReader({
 						className="rounded-full"
 						onClick={() => {
 							stopPreview();
+							stopVoicePlayback();
 							onToggleNightMode?.();
 						}}
 					>
@@ -304,10 +376,27 @@ export function StoryReader({
 								>
 									{canUsePaidAudio ? (
 										<audio
+											ref={(element) => {
+												audioRefs.current[part.order] = element;
+											}}
 											controls
-											preload="none"
+											preload={voiceMode ? "auto" : "metadata"}
 											src={part.voiceUrl}
 											className="w-full sm:max-w-xs"
+											onPlay={() => {
+												stopPreview();
+												pauseOtherVoices(part.order);
+												setPlayingVoiceOrder(part.order);
+											}}
+											onPause={() => {
+												const audio = audioRefs.current[part.order];
+												if (!audio?.ended && playingVoiceOrder === part.order) {
+													setPlayingVoiceOrder(null);
+												}
+											}}
+											onEnded={() => {
+												void playNextVoice(part.order);
+											}}
 										/>
 									) : (
 										<Button
